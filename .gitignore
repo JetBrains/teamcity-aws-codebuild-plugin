@@ -1,0 +1,7 @@
+.idea
+**.iml
+.gradle
+*/build
+teamcity
+downloads
+amazon-util
