@@ -23,3 +23,6 @@
 
 <c:set var="project_name_param" value="<%=CodeBuildConstants.PROJECT_NAME_PARAM%>"/>
 <c:set var="project_name_label" value="<%=CodeBuildConstants.PROJECT_NAME_LABEL%>"/>
+
+<c:set var="source_version_param" value="<%=CodeBuildConstants.SOURCE_VERSION_PARAM%>"/>
+<c:set var="source_version_label" value="<%=CodeBuildConstants.SOURCE_VERSION_LABEL%>"/>

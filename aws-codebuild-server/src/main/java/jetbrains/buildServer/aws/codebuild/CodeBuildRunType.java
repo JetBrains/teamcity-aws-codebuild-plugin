@@ -88,8 +88,20 @@ public class CodeBuildRunType extends RunType {
   @Override
   public String describeParameters(@NotNull Map<String, String> parameters) {
     final Map<String, String> invalids = ParametersValidator.validateSettings(parameters, true);
-    return
-      invalids.isEmpty() ?
-        StringUtil.join(invalids.values(), ", ") : "Run AWS CodeBuild in " + CodeBuildUtil.getProjectName(parameters) + " project";
+    if (invalids.isEmpty()) {
+      final StringBuilder descr = new StringBuilder("Run AWS CodeBuild in ");
+      descr.append(CodeBuildUtil.getProjectName(parameters)).append(" project");
+
+      final String sourceVersion = CodeBuildUtil.getSourceVersion(parameters);
+      if (StringUtil.isNotEmpty(sourceVersion)) {
+        descr.append(" with source version ").append(sourceVersion);
+      } else {
+        descr.append(" with the latest source version");
+      }
+
+      return descr.toString();
+    } else {
+      return StringUtil.join(invalids.values(), ", ");
+    }
   }
 }

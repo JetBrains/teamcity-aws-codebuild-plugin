@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getProjectName;
+import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getSourceVersion;
 
 /**
  * @author vbedrosova
@@ -40,11 +41,13 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         // artifacts
         // variables
         // wait for build finish - in step, in build?
+        final Map<String, String> runnerParameters = context.getRunnerParameters();
         final String buildId = createClient(params).startBuild(
             new StartBuildRequest()
-              .withProjectName(getProjectName(context.getRunnerParameters()))).getBuild().getId();
+              .withProjectName(getProjectName(runnerParameters))
+              .withSourceVersion(getSourceVersion(runnerParameters))).getBuild().getId();
 
-        myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, context.getRunnerParameters()));
+        myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
         runningBuild.getBuildLogger().message("AWS CodeBuild build with id=" + buildId + " started");
       }
 
@@ -111,21 +114,24 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         final Build codeBuildBuild = builds.iterator().next();
         if (codeBuildBuild.getBuildComplete()) {
           // import logs?
-          if (!"SUCCEEDED".equals(codeBuildBuild.getBuildStatus())) {
-            build.getBuildLogger().logBuildProblem(createBuildProblem(codeBuildBuild));
-          } else {
+          if (CodeBuildConstants.SUCCEEDED.equals(codeBuildBuild.getBuildStatus())) {
             build.getBuildLogger().message("AWS CodeBuild build with id=" + context.codeBuildBuildId + " succeeded");
+          } else {
+            build.getBuildLogger().logBuildProblem(createBuildProblem(codeBuildBuild));
           }
           it.remove();
         }
       }
+      try {
+        Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
+      } catch (InterruptedException e) { /* do nothing */}
     }
   }
 
   @NotNull
   private BuildProblemData createBuildProblem(@NotNull Build codeBuildBuild) {
     return BuildProblemData.createBuildProblem(
-      codeBuildBuild.getProjectName().hashCode() + codeBuildBuild.getBuildStatus(),
+      codeBuildBuild.getProjectName().hashCode() + codeBuildBuild.getBuildStatus(), // add settings hash
       CodeBuildConstants.BUILD_PROBLEM_TYPE,
       "AWS CodeBuild build finished with status: " + codeBuildBuild.getBuildStatus());
   }

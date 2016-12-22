@@ -15,6 +15,11 @@ public interface CodeBuildConstants {
   String PROJECT_NAME_LABEL = "Project name";
 
   String SOURCE_VERSION_PARAM = "codebuild_source_version";
+  String SOURCE_VERSION_LABEL = "Source version";
 
   String BUILD_PROBLEM_TYPE = "CODEBUILD_FAILURE";
+
+  long POLL_INTERVAL = 10;
+
+  String SUCCEEDED = "SUCCEEDED";
 }

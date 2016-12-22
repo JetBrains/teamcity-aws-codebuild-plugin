@@ -21,11 +21,19 @@
 <%@include file="paramsConstants.jspf"%>
 <jsp:include page="editAWSCommonParams.jsp"/>
 
-<l:settingsGroup title="Build settings">
+<l:settingsGroup title="AWS CodeBuild settings">
     <tr>
         <th><label for="${project_name_param}">${project_name_label}: <l:star/></label></th>
-        <td><props:textProperty name="${project_name_param}" className="longField" maxlength="256" expandable="true"/>
+        <td><props:textProperty name="${project_name_param}" className="longField" maxlength="256"/>
             <span class="error" id="error_${project_name_param}"></span>
+        </td>
+    </tr>
+    <tr>
+        <th><label for="${source_version_param}">${source_version_label}:</label></th>
+        <td><props:textProperty name="${source_version_param}" className="longField" maxlength="256"/>
+            <span class="smallNote">Leave blank to build the latest version.</span>
+            <span class="smallNote">To build a specific version, type the related version ID (if the source code is in Amazon S3) or commit ID.</span>
+            <span class="error" id="error_${source_version_param}"></span>
         </td>
     </tr>
 </l:settingsGroup>
