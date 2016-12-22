@@ -51,7 +51,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))).getBuild().getId();
 
         myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
-        runningBuild.getBuildLogger().message("AWS CodeBuild build with id=" + buildId + " started");
+        runningBuild.getBuildLogger().message(getProjectName(params) + " build with id=" + buildId + " started");
       }
 
       @NotNull
@@ -118,9 +118,9 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         if (codeBuildBuild.getBuildComplete()) {
           // import logs?
           if (CodeBuildConstants.SUCCEEDED.equals(codeBuildBuild.getBuildStatus())) {
-            build.getBuildLogger().message("AWS CodeBuild build with id=" + context.codeBuildBuildId + " succeeded");
+            build.getBuildLogger().message(getProjectName(context.params) + " build with id=" + context.codeBuildBuildId + " succeeded");
           } else {
-            build.getBuildLogger().logBuildProblem(createBuildProblem(codeBuildBuild));
+            build.getBuildLogger().logBuildProblem(createBuildProblem(build, codeBuildBuild, context.params));
           }
           it.remove();
         }
@@ -132,11 +132,28 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   }
 
   @NotNull
-  private BuildProblemData createBuildProblem(@NotNull Build codeBuildBuild) {
+  private BuildProblemData createBuildProblem(@NotNull AgentRunningBuild build,@NotNull Build codeBuildBuild, @NotNull Map<String, String> runnerParams) {
     return BuildProblemData.createBuildProblem(
-      codeBuildBuild.getProjectName().hashCode() + codeBuildBuild.getBuildStatus(), // add settings hash
+      String.valueOf(getProblemIdentity(build, codeBuildBuild, runnerParams)),
       CodeBuildConstants.BUILD_PROBLEM_TYPE,
-      "AWS CodeBuild build finished with status: " + codeBuildBuild.getBuildStatus());
+      getProblemDescription(codeBuildBuild, runnerParams));
+  }
+
+  @NotNull
+  private String getProblemDescription(@NotNull Build codeBuildBuild, @NotNull Map<String, String> runnerParams) {
+    final String status = codeBuildBuild.getBuildStatus();
+    final StringBuilder res = new StringBuilder(getProjectName(runnerParams));
+    res.append(" build ");
+    if ("FAILED".equals(status)) {
+      res.append("failed");
+    } else {
+      res.append("finished with status: ").append(status);
+    }
+    return res.toString();
+  }
+
+  private int getProblemIdentity(@NotNull AgentRunningBuild build, @NotNull Build codeBuildBuild, @NotNull Map<String, String> runnerParams) {
+    return AWSCommonParams.calculateIdentity(build.getCheckoutDirectory().getAbsolutePath(), runnerParams, getProjectName(runnerParams), codeBuildBuild.getBuildStatus());
   }
 
   private static final class CodeBuildBuildContext {
