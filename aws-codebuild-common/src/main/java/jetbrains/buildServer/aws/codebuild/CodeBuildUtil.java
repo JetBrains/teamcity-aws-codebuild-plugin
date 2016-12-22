@@ -20,4 +20,18 @@ public final class CodeBuildUtil {
   public static String getSourceVersion(@NotNull Map<String, String> params) {
     return params.get(SOURCE_VERSION_PARAM);
   }
+
+  @Nullable
+  public static String getTimeoutMinutes(@NotNull Map<String, String> params) {
+    return params.get(TIMEOUT_MINUTES_PARAM);
+  }
+
+  @NotNull
+  public static int getTimeoutMinutesInt(@NotNull Map<String, String> params) {
+    try {
+      return Integer.parseInt(params.get(TIMEOUT_MINUTES_PARAM));
+    } catch (NumberFormatException e) {
+      return DEFAULT_TIMEOUT_MINUTES;
+    }
+  }
 }

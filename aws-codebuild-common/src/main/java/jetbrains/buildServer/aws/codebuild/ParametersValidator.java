@@ -1,6 +1,5 @@
 package jetbrains.buildServer.aws.codebuild;
 
-import jetbrains.buildServer.parameters.ReferencesResolverUtil;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
@@ -8,8 +7,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 import static jetbrains.buildServer.aws.codebuild.CodeBuildConstants.*;
+import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getProjectName;
+import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getTimeoutMinutes;
 
 /**
  * @author vbedrosova
@@ -27,6 +27,18 @@ public class ParametersValidator {
     final String projectName = getProjectName(params);
     if (StringUtil.isEmpty(projectName)) {
       invalids.put(PROJECT_NAME_PARAM, PROJECT_NAME_LABEL + " mustn't be empty");
+    }
+
+    final String timeoutMinutes = getTimeoutMinutes(params);
+    if (StringUtil.isNotEmpty(timeoutMinutes)) {
+      try {
+        final int timeoutMinutesInt = Integer.parseInt(timeoutMinutes);
+        if (timeoutMinutesInt < 5 || timeoutMinutesInt > 480) {
+          invalids.put(TIMEOUT_MINUTES_PARAM, TIMEOUT_MINUTES_LABEL + " must be 5 to 480 minutes");
+        }
+      } catch (NumberFormatException e) {
+        invalids.put(TIMEOUT_MINUTES_PARAM, TIMEOUT_MINUTES_LABEL + " must be 5 to 480 minutes");
+      }
     }
 
     return invalids;

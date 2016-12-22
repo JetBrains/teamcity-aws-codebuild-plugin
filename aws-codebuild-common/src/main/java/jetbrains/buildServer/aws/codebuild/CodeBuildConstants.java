@@ -17,6 +17,10 @@ public interface CodeBuildConstants {
   String SOURCE_VERSION_PARAM = "codebuild_source_version";
   String SOURCE_VERSION_LABEL = "Source version";
 
+  String TIMEOUT_MINUTES_PARAM = "codebuild_timeout_minutes";
+  String TIMEOUT_MINUTES_LABEL = "Timeout (minutes)";
+  int DEFAULT_TIMEOUT_MINUTES = 60;
+
   String BUILD_PROBLEM_TYPE = "CODEBUILD_FAILURE";
 
   long POLL_INTERVAL = 10;

@@ -25,3 +25,7 @@
 <div class="parameter">
     ${source_version_label}: <props:displayValue name="${source_version_param}" emptyValue="latest"/>
 </div>
+
+<div class="parameter">
+    ${timeout_minutes_label}: <props:displayValue name="${timeout_minutes_param}" emptyValue="defult"/>
+</div>

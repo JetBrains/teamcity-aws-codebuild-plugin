@@ -13,10 +13,12 @@ import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getProjectName;
-import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getSourceVersion;
+import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 
 /**
  * @author vbedrosova
@@ -45,7 +47,8 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         final String buildId = createClient(params).startBuild(
             new StartBuildRequest()
               .withProjectName(getProjectName(runnerParameters))
-              .withSourceVersion(getSourceVersion(runnerParameters))).getBuild().getId();
+              .withSourceVersion(getSourceVersion(runnerParameters))
+              .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))).getBuild().getId();
 
         myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
         runningBuild.getBuildLogger().message("AWS CodeBuild build with id=" + buildId + " started");
