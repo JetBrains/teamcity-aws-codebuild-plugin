@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -69,7 +70,10 @@ public class CodeBuildRunType extends RunType {
   @Nullable
   @Override
   public Map<String, String> getDefaultRunnerProperties() {
-    return myAWSCommonParams.getDefaults();
+    final Map<String, String> defaults = new HashMap<>();
+    defaults.putAll(myAWSCommonParams.getDefaults());
+    defaults.putAll(CodeBuildConstants.DEFAULTS);
+    return defaults;
   }
 
   @NotNull

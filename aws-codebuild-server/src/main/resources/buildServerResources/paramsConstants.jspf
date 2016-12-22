@@ -29,3 +29,12 @@
 
 <c:set var="timeout_minutes_param" value="<%=CodeBuildConstants.TIMEOUT_MINUTES_PARAM%>"/>
 <c:set var="timeout_minutes_label" value="<%=CodeBuildConstants.TIMEOUT_MINUTES_LABEL%>"/>
+
+<c:set var="wait_param" value="<%=CodeBuildConstants.WAIT_PARAM%>"/>
+<c:set var="wait_label" value="<%=CodeBuildConstants.WAIT_LABEL%>"/>
+<c:set var="wait_none" value="<%=CodeBuildConstants.WAIT_NONE%>"/>
+<c:set var="wait_step" value="<%=CodeBuildConstants.WAIT_STEP%>"/>
+<c:set var="wait_build" value="<%=CodeBuildConstants.WAIT_BUILD%>"/>
+<c:set var="wait_none_label" value="<%=CodeBuildConstants.WAIT_NONE_LABEL%>"/>
+<c:set var="wait_step_label" value="<%=CodeBuildConstants.WAIT_STEP_LABEL%>"/>
+<c:set var="wait_build_label" value="<%=CodeBuildConstants.WAIT_BUILD_LABEL%>"/>

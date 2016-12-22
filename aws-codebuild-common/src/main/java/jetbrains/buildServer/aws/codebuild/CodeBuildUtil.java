@@ -26,6 +26,14 @@ public final class CodeBuildUtil {
     return params.get(TIMEOUT_MINUTES_PARAM);
   }
 
+  public static boolean isWaitStep(@NotNull Map<String, String> params) {
+    return WAIT_STEP.equals(params.get(WAIT_PARAM));
+  }
+
+  public static boolean isWaitBuild(@NotNull Map<String, String> params) {
+    return WAIT_BUILD.equals(params.get(WAIT_PARAM));
+  }
+
   @NotNull
   public static int getTimeoutMinutesInt(@NotNull Map<String, String> params) {
     try {

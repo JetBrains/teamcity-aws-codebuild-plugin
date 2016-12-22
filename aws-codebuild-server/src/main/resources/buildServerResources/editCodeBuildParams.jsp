@@ -43,4 +43,12 @@
             <span class="error" id="error_${timeout_minutes_param}"></span>
         </td>
     </tr>
+    <tr class="advancedSetting">
+        <th><label for="${wait_param}">${wait_label}:</label></th>
+        <td><props:selectProperty name="${wait_param}" className="longField" enableFilter="true">
+            <props:option value="${wait_none}">${wait_none_label}</props:option>
+            <props:option value="${wait_build}">${wait_build_label}</props:option>
+            <props:option value="${wait_step}">${wait_step_label}</props:option>
+        </props:selectProperty></td>
+    </tr>
 </l:settingsGroup>

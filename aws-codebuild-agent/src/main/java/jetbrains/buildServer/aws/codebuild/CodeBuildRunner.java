@@ -38,11 +38,8 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       @Override
       public void start() throws RunBuildException {
         final Map<String, String> params = validateParams();
-        // version
-        // timeout
         // artifacts
         // variables
-        // wait for build finish - in step, in build?
         final Map<String, String> runnerParameters = context.getRunnerParameters();
         final String buildId = createClient(params).startBuild(
             new StartBuildRequest()
@@ -50,8 +47,18 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               .withSourceVersion(getSourceVersion(runnerParameters))
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))).getBuild().getId();
 
-        myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
         runningBuild.getBuildLogger().message(getProjectName(params) + " build with id=" + buildId + " started");
+
+        if (isWaitStep(runnerParameters)) {
+          final CodeBuildBuildContext c = new CodeBuildBuildContext(buildId, runnerParameters);
+          while (!finished(c, runningBuild)) {
+            try {
+              Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
+            } catch (InterruptedException e) { /* do nothing */ }
+          }
+        } else if (isWaitBuild(runnerParameters)) {
+          myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
+        }
       }
 
       @NotNull
@@ -99,36 +106,37 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     while (!myCodeBuildBuilds.isEmpty()) { // timeout?
       final Iterator<CodeBuildBuildContext> it = myCodeBuildBuilds.iterator();
       while (it.hasNext()) {
-
-        final CodeBuildBuildContext context = it.next();
-
-        final List<Build> builds = createClient(context.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(context.codeBuildBuildId)).getBuilds();
-
-        if (builds.isEmpty()) {
-          build.getBuildLogger().warning("No AWS CodeBuild build with id=" + context.codeBuildBuildId + " found");
-          it.remove();
-          continue;
-        }
-
-        if (builds.size() > 1) {
-          build.getBuildLogger().warning("Found several AWS CodeBuild builds with id=" + context.codeBuildBuildId + ". Will process the first one.");
-        }
-
-        final Build codeBuildBuild = builds.iterator().next();
-        if (codeBuildBuild.getBuildComplete()) {
-          // import logs?
-          if (CodeBuildConstants.SUCCEEDED.equals(codeBuildBuild.getBuildStatus())) {
-            build.getBuildLogger().message(getProjectName(context.params) + " build with id=" + context.codeBuildBuildId + " succeeded");
-          } else {
-            build.getBuildLogger().logBuildProblem(createBuildProblem(build, codeBuildBuild, context.params));
-          }
-          it.remove();
-        }
+        if (finished(it.next(), build)) it.remove();
       }
       try {
         Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
       } catch (InterruptedException e) { /* do nothing */}
     }
+  }
+
+  private boolean finished(@NotNull CodeBuildBuildContext context, @NotNull AgentRunningBuild build) {
+    final List<Build> builds = createClient(context.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(context.codeBuildBuildId)).getBuilds();
+
+    if (builds.isEmpty()) {
+      build.getBuildLogger().warning("No AWS CodeBuild build with id=" + context.codeBuildBuildId + " found");
+      return true;
+    }
+
+    if (builds.size() > 1) {
+      build.getBuildLogger().warning("Found several AWS CodeBuild builds with id=" + context.codeBuildBuildId + ". Will process the first one.");
+    }
+
+    final Build codeBuildBuild = builds.iterator().next();
+    if (codeBuildBuild.getBuildComplete()) {
+      // import logs?
+      if (CodeBuildConstants.SUCCEEDED.equals(codeBuildBuild.getBuildStatus())) {
+        build.getBuildLogger().message(getProjectName(context.params) + " build with id=" + context.codeBuildBuildId + " succeeded");
+      } else {
+        build.getBuildLogger().logBuildProblem(createBuildProblem(build, codeBuildBuild, context.params));
+      }
+      return true;
+    }
+    return false;
   }
 
   @NotNull

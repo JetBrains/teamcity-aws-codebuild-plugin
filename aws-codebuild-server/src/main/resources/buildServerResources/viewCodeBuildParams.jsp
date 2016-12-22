@@ -27,5 +27,13 @@
 </div>
 
 <div class="parameter">
-    ${timeout_minutes_label}: <props:displayValue name="${timeout_minutes_param}" emptyValue="defult"/>
+    ${timeout_minutes_label}: <props:displayValue name="${timeout_minutes_param}" emptyValue="default"/>
+</div>
+
+<c:set var="wait" value="${propertiesBean.properties[wait_param]}"/>
+<div class="parameter">
+    ${wait_label}: <strong><c:choose><c:when test="${wait_build eq wait}">${wait_build_label}</c:when>
+        <c:when test="${wait_step eq wait}">${wait_step_label}</c:when>
+        <c:otherwise>${wait_none_label}</c:otherwise>
+    </c:choose></strong>
 </div>
