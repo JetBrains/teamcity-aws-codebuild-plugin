@@ -39,7 +39,7 @@
     <tr class="advancedSetting">
         <th><label for="${timeout_minutes_param}">${timeout_minutes_label}:</label></th>
         <td><props:textProperty name="${timeout_minutes_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">This build timeout must be 5 to 480 minutes. Leave blank to use the default value (60 minutes).</span>
+            <span class="smallNote">This build timeout must be 5 to 480 minutes. Leave blank to use the default value.</span>
             <span class="error" id="error_${timeout_minutes_param}"></span>
         </td>
     </tr>
