@@ -18,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-import static jetbrains.buildServer.aws.codebuild.CodeBuildConstants.ENV_VAR_PREFIX;
 import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 
 /**
@@ -65,13 +64,10 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
       @NotNull
       private Collection<EnvironmentVariable> getEnvironmentVariables() {
-        return CollectionsUtil.convertAndFilterNulls(context.getBuildParameters().getEnvironmentVariables().entrySet(), new Converter<EnvironmentVariable, Map.Entry<String, String>>() {
+        return CollectionsUtil.convertCollection(context.getBuildParameters().getSystemProperties().entrySet(), new Converter<EnvironmentVariable, Map.Entry<String, String>>() {
           @Override
           public EnvironmentVariable createFrom(@NotNull Map.Entry<String, String> e) {
-            if (e.getKey().startsWith(ENV_VAR_PREFIX)) {
-              return new EnvironmentVariable().withName(e.getKey().substring(ENV_VAR_PREFIX.length())).withValue(e.getValue());
-            }
-            return null;
+            return new EnvironmentVariable().withName(e.getKey()).withValue(e.getValue());
           }
         });
       }
