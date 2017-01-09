@@ -37,17 +37,17 @@
         </td>
     </tr>
     <tr class="advancedSetting">
-        <th><label for="${timeout_minutes_param}">${timeout_minutes_label}:</label></th>
-        <td><props:textProperty name="${timeout_minutes_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">Build timeout must be 5 to 480 minutes. Leave blank to use the default value.</span>
-            <span class="error" id="error_${timeout_minutes_param}"></span>
-        </td>
-    </tr>
-    <tr class="advancedSetting">
         <th><label for="${build_spec_param}">${build_spec_label}:</label></th>
         <td><props:multilineProperty name="${build_spec_param}" linkTitle="Enter the build specification" rows="10" cols="58" className="longField"/>
             <span class="smallNote">Build specification in YAML format. Leave blank to use the project's default build spec.</span>
             <span class="error" id="error_${build_spec_param}"></span>
+        </td>
+    </tr>
+    <tr class="advancedSetting">
+        <th><label for="${timeout_minutes_param}">${timeout_minutes_label}:</label></th>
+        <td><props:textProperty name="${timeout_minutes_param}" className="longField" maxlength="256"/>
+            <span class="smallNote">Build timeout must be 5 to 480 minutes. Leave blank to use the default value.</span>
+            <span class="error" id="error_${timeout_minutes_param}"></span>
         </td>
     </tr>
     <tr class="advancedSetting">
