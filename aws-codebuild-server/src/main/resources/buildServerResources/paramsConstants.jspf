@@ -27,6 +27,9 @@
 <c:set var="source_version_param" value="<%=CodeBuildConstants.SOURCE_VERSION_PARAM%>"/>
 <c:set var="source_version_label" value="<%=CodeBuildConstants.SOURCE_VERSION_LABEL%>"/>
 
+<c:set var="build_spec_param" value="<%=CodeBuildConstants.BUILD_SPEC_PARAM%>"/>
+<c:set var="build_spec_label" value="<%=CodeBuildConstants.BUILD_SPEC_LABEL%>"/>
+
 <c:set var="timeout_minutes_param" value="<%=CodeBuildConstants.TIMEOUT_MINUTES_PARAM%>"/>
 <c:set var="timeout_minutes_label" value="<%=CodeBuildConstants.TIMEOUT_MINUTES_LABEL%>"/>
 

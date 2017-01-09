@@ -40,12 +40,12 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       public void start() throws RunBuildException {
         final Map<String, String> params = validateParams();
         // artifacts
-        // variables
         final Map<String, String> runnerParameters = context.getRunnerParameters();
         final String buildId = createClient(params).startBuild(
             new StartBuildRequest()
               .withProjectName(getProjectName(runnerParameters))
               .withSourceVersion(getSourceVersion(runnerParameters))
+              .withBuildspecOverride(getBuildSpec(runnerParameters))
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
               .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 

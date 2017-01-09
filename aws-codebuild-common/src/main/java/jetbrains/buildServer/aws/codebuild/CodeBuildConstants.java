@@ -21,6 +21,9 @@ public interface CodeBuildConstants {
   String SOURCE_VERSION_PARAM = "codebuild_source_version";
   String SOURCE_VERSION_LABEL = "Source version";
 
+  String BUILD_SPEC_PARAM = "codebuild_build_spec";
+  String BUILD_SPEC_LABEL = "Build specification";
+
   String WAIT_PARAM = "codebuild_wait";
   String WAIT_NONE = "none";
   String WAIT_STEP = "step";

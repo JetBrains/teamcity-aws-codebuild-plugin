@@ -44,6 +44,13 @@
         </td>
     </tr>
     <tr class="advancedSetting">
+        <th><label for="${build_spec_param}">${build_spec_label}:</label></th>
+        <td><props:multilineProperty name="${build_spec_param}" linkTitle="Enter the build specification" rows="10" cols="58" className="longField"/>
+            <span class="smallNote">Build specification in YAML format. Leave blank to use the project's default build spec.</span>
+            <span class="error" id="error_${build_spec_param}"></span>
+        </td>
+    </tr>
+    <tr class="advancedSetting">
         <th><label for="${wait_param}">${wait_label}:</label></th>
         <td><props:selectProperty name="${wait_param}" className="longField" enableFilter="true">
             <props:option value="${wait_none}">${wait_none_label}</props:option>

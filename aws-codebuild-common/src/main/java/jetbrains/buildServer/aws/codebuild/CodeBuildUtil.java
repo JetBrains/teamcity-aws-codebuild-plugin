@@ -22,6 +22,11 @@ public final class CodeBuildUtil {
   }
 
   @Nullable
+  public static String getBuildSpec(@NotNull Map<String, String> params) {
+    return params.get(BUILD_SPEC_PARAM);
+  }
+
+  @Nullable
   public static String getTimeoutMinutes(@NotNull Map<String, String> params) {
     return params.get(TIMEOUT_MINUTES_PARAM);
   }

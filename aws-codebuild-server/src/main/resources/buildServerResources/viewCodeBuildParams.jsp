@@ -27,6 +27,10 @@
 </div>
 
 <div class="parameter">
+    ${build_spec_label}: <props:displayValue name="${build_spec_param}" emptyValue="default" showInPopup="true" popupTitle="Build specification" popupLinkText="view build spec" syntax="yaml"/>
+</div>
+
+<div class="parameter">
     ${timeout_minutes_label}: <props:displayValue name="${timeout_minutes_param}" emptyValue="default"/>
 </div>
 
