@@ -31,7 +31,7 @@
     <tr>
         <th><label for="${source_version_param}">${source_version_label}:</label></th>
         <td><props:textProperty name="${source_version_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">To build a specific version, type the related version ID (if the source code is in Amazon S3) or commit ID.</span>
+            <span class="smallNote">Version ID (if the source code is in Amazon S3) or commit ID.</span>
             <span class="smallNote">Leave blank to build the latest version.</span>
             <span class="error" id="error_${source_version_param}"></span>
         </td>
@@ -39,7 +39,7 @@
     <tr class="advancedSetting">
         <th><label for="${timeout_minutes_param}">${timeout_minutes_label}:</label></th>
         <td><props:textProperty name="${timeout_minutes_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">This build timeout must be 5 to 480 minutes. Leave blank to use the default value.</span>
+            <span class="smallNote">Build timeout must be 5 to 480 minutes. Leave blank to use the default value.</span>
             <span class="error" id="error_${timeout_minutes_param}"></span>
         </td>
     </tr>
