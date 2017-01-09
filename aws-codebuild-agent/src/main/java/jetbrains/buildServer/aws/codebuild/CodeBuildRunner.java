@@ -114,14 +114,16 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
     super.beforeBuildFinish(build, buildStatus);
 
-    while (!myCodeBuildBuilds.isEmpty()) { // timeout?
+    while (!myCodeBuildBuilds.isEmpty() && build.getInterruptReason() == null) { // timeout?
       final Iterator<CodeBuildBuildContext> it = myCodeBuildBuilds.iterator();
       while (it.hasNext()) {
         if (finished(it.next(), build)) it.remove();
       }
       try {
         Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
-      } catch (InterruptedException e) { /* do nothing */}
+      } catch (InterruptedException e) {
+        break;
+      }
     }
   }
 
