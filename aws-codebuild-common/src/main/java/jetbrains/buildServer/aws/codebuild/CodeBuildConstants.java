@@ -41,4 +41,6 @@ public interface CodeBuildConstants {
   String SUCCEEDED = "SUCCEEDED";
 
   Map<String, String> DEFAULTS = CollectionsUtil.asMap(WAIT_PARAM, WAIT_BUILD);
+
+  String ENV_VAR_PREFIX = "aws.codeBuild.";
 }

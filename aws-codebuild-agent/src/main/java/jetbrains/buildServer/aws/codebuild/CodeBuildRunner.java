@@ -3,21 +3,22 @@ package jetbrains.buildServer.aws.codebuild;
 import com.amazonaws.services.codebuild.AWSCodeBuildClient;
 import com.amazonaws.services.codebuild.model.BatchGetBuildsRequest;
 import com.amazonaws.services.codebuild.model.Build;
+import com.amazonaws.services.codebuild.model.EnvironmentVariable;
 import com.amazonaws.services.codebuild.model.StartBuildRequest;
 import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.RunBuildException;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.messages.ErrorData;
+import jetbrains.buildServer.util.CollectionsUtil;
+import jetbrains.buildServer.util.Converter;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static jetbrains.buildServer.aws.codebuild.CodeBuildConstants.ENV_VAR_PREFIX;
 import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 
 /**
@@ -45,7 +46,8 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
             new StartBuildRequest()
               .withProjectName(getProjectName(runnerParameters))
               .withSourceVersion(getSourceVersion(runnerParameters))
-              .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))).getBuild().getId();
+              .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
+              .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 
         runningBuild.getBuildLogger().message(getProjectName(params) + " build with id=" + buildId + " started");
 
@@ -59,6 +61,19 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         } else if (isWaitBuild(runnerParameters)) {
           myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
         }
+      }
+
+      @NotNull
+      private Collection<EnvironmentVariable> getEnvironmentVariables() {
+        return CollectionsUtil.convertAndFilterNulls(context.getBuildParameters().getEnvironmentVariables().entrySet(), new Converter<EnvironmentVariable, Map.Entry<String, String>>() {
+          @Override
+          public EnvironmentVariable createFrom(@NotNull Map.Entry<String, String> e) {
+            if (e.getKey().startsWith(ENV_VAR_PREFIX)) {
+              return new EnvironmentVariable().withName(e.getKey().substring(ENV_VAR_PREFIX.length())).withValue(e.getValue());
+            }
+            return null;
+          }
+        });
       }
 
       @NotNull
