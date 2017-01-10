@@ -1,10 +1,7 @@
 package jetbrains.buildServer.aws.codebuild;
 
 import com.amazonaws.services.codebuild.AWSCodeBuildClient;
-import com.amazonaws.services.codebuild.model.BatchGetBuildsRequest;
-import com.amazonaws.services.codebuild.model.Build;
-import com.amazonaws.services.codebuild.model.EnvironmentVariable;
-import com.amazonaws.services.codebuild.model.StartBuildRequest;
+import com.amazonaws.services.codebuild.model.*;
 import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.RunBuildException;
 import jetbrains.buildServer.agent.*;
@@ -15,6 +12,7 @@ import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -45,6 +43,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               .withProjectName(getProjectName(runnerParameters))
               .withSourceVersion(getSourceVersion(runnerParameters))
               .withBuildspecOverride(getBuildSpec(runnerParameters))
+              .withArtifactsOverride(getArtifacts())
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
               .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 
@@ -72,6 +71,18 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
             return new EnvironmentVariable().withName(e.getKey()).withValue(e.getValue());
           }
         });
+      }
+
+      @Nullable
+      private ProjectArtifacts getArtifacts() {
+        final Map<String, String> params = context.getRunnerParameters();
+        return isUploadS3Artifacts(params) ?
+          new ProjectArtifacts()
+            .withType(ArtifactsType.S3)
+            .withPackaging(isZipS3Artifacts(params) ? ArtifactPackaging.ZIP : ArtifactPackaging.NONE)
+            .withName(getArtifactS3Name(params))
+            .withLocation(getArtifactS3Bucket(params))
+          : null;
       }
 
       @NotNull

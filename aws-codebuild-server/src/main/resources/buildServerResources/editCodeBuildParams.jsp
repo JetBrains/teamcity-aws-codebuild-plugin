@@ -18,6 +18,12 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 
+<style type="text/css">
+    .runnerFormTable .artifactsSetting {
+        display: none;
+    }
+</style>
+
 <%@include file="paramsConstants.jspf"%>
 <jsp:include page="editAWSCommonParams.jsp"/>
 
@@ -31,7 +37,7 @@
     <tr>
         <th><label for="${source_version_param}">${source_version_label}:</label></th>
         <td><props:textProperty name="${source_version_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">Version ID (if the source code is in Amazon S3) or commit ID.</span>
+            <span class="smallNote">Version ID (if the source code is in Amazon S3) or commit ID (if AWS CodeCommit or GitHub).</span>
             <span class="smallNote">Leave blank to build the latest version.</span>
             <span class="error" id="error_${source_version_param}"></span>
         </td>
@@ -41,6 +47,32 @@
         <td><props:multilineProperty name="${build_spec_param}" linkTitle="Enter the build specification" rows="10" cols="58" className="longField"/>
             <span class="smallNote">Build specification in YAML format. Leave blank to use the project's default build spec.</span>
             <span class="error" id="error_${build_spec_param}"></span>
+        </td>
+    </tr>
+    <tr class="advancedSetting">
+        <th><label for="${artifacts_param}">${artifacts_label}: <l:star/></label></th>
+        <td><props:selectProperty name="${artifacts_param}" onchange="codeBuildUpdateArtifactsSettingsVisibility();" className="longField" enableFilter="true">
+            <props:option value="${artifacts_none}">${artifacts_none_label}</props:option>
+            <props:option value="${artifacts_s3}">${artifacts_s3_label}</props:option>
+        </props:selectProperty></td>
+    </tr>
+    <tr class="advancedSetting artifactsSetting">
+        <th><label for="${zip_param}">${zip_label}:</label></th>
+        <td><props:checkboxProperty name="${zip_param}" onclick="codeBuildUpdateArtifactsName();"/></td>
+    </tr>
+    <tr class="advancedSetting artifactsSetting">
+        <th><label for="${artifacts_name_param}">${artifacts_name_label}:</label></th>
+        <td><props:textProperty name="${artifacts_name_param}" className="longField" maxlength="256"/>
+            <span id="noteFolder" class="smallNote">Folder name. Leave blank to use the default value.</span>
+            <span id="noteArchive" class="smallNote">Archive name. Leave blank to use the default value.</span>
+            <span class="error" id="error_${artifacts_name_param}"></span>
+        </td>
+    </tr>
+    <tr class="advancedSetting artifactsSetting">
+        <th><label for="${bucket_param}">${bucket_label}: <l:star/></label></th>
+        <td><props:textProperty name="${bucket_param}" className="longField" maxlength="256"/>
+            <span class="smallNote">S3 bucket to upload artifacts to.</span>
+            <span class="error" id="error_${bucket_param}"></span>
         </td>
     </tr>
     <tr class="advancedSetting">
@@ -59,3 +91,26 @@
         </props:selectProperty></td>
     </tr>
 </l:settingsGroup>
+<script type="application/javascript">
+    window.codeBuildUpdateArtifactsSettingsVisibility = function () {
+        var showArtifactsSettings = $j('#runnerParams #${artifacts_param} option:selected').val() == '${artifacts_s3}';
+        $j('#runnerParams .artifactsSetting').each(function() {
+            if (showArtifactsSettings) BS.Util.show(this);
+            else BS.Util.hide(this);
+        });
+
+        BS.VisibilityHandlers.updateVisibility('runnerParams');
+    };
+    window.codeBuildUpdateArtifactsName = function () {
+        if ($j('#${zip_param}').is(':checked')) {
+            BS.Util.show('noteArchive');
+            BS.Util.hide('noteFolder');
+        } else {
+            BS.Util.hide('noteArchive');
+            BS.Util.show('noteFolder');
+        }
+        BS.VisibilityHandlers.updateVisibility('runnerParams');
+    };
+    codeBuildUpdateArtifactsSettingsVisibility();
+    codeBuildUpdateArtifactsName();
+</script>

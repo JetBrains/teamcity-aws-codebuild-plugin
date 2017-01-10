@@ -30,6 +30,22 @@
 <c:set var="build_spec_param" value="<%=CodeBuildConstants.BUILD_SPEC_PARAM%>"/>
 <c:set var="build_spec_label" value="<%=CodeBuildConstants.BUILD_SPEC_LABEL%>"/>
 
+<c:set var="artifacts_param" value="<%=CodeBuildConstants.ARTIFACTS_PARAM%>"/>
+<c:set var="artifacts_label" value="<%=CodeBuildConstants.ARTIFACTS_LABEL%>"/>
+<c:set var="artifacts_none" value="<%=CodeBuildConstants.ARTIFACTS_NONE%>"/>
+<c:set var="artifacts_s3" value="<%=CodeBuildConstants.ARTIFACTS_S3%>"/>
+<c:set var="artifacts_none_label" value="<%=CodeBuildConstants.ARTIFACTS_NONE_LABEL%>"/>
+<c:set var="artifacts_s3_label" value="<%=CodeBuildConstants.ARTIFACTS_S3_LABEL%>"/>
+
+<c:set var="artifacts_name_param" value="<%=CodeBuildConstants.ARTIFACTS_S3_NAME_PARAM%>"/>
+<c:set var="artifacts_name_label" value="<%=CodeBuildConstants.ARTIFACTS_S3_NAME_LABEL%>"/>
+
+<c:set var="bucket_param" value="<%=CodeBuildConstants.ARTIFACTS_S3_BUCKET_PARAM%>"/>
+<c:set var="bucket_label" value="<%=CodeBuildConstants.ARTIFACTS_S3_BUCKET_LABEL%>"/>
+
+<c:set var="zip_param" value="<%=CodeBuildConstants.ARTIFACTS_S3_ZIP_PARAM%>"/>
+<c:set var="zip_label" value="<%=CodeBuildConstants.ARTIFACTS_S3_ZIP_LABEL%>"/>
+
 <c:set var="timeout_minutes_param" value="<%=CodeBuildConstants.TIMEOUT_MINUTES_PARAM%>"/>
 <c:set var="timeout_minutes_label" value="<%=CodeBuildConstants.TIMEOUT_MINUTES_LABEL%>"/>
 

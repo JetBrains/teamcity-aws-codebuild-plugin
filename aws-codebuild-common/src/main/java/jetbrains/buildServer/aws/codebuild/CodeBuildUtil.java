@@ -26,6 +26,24 @@ public final class CodeBuildUtil {
     return params.get(BUILD_SPEC_PARAM);
   }
 
+  public static boolean isUploadS3Artifacts(@NotNull Map<String, String> params) {
+    return ARTIFACTS_S3.equals(params.get(ARTIFACTS_PARAM));
+  }
+
+  public static boolean isZipS3Artifacts(@NotNull Map<String, String> params) {
+    return Boolean.parseBoolean(params.get(ARTIFACTS_S3_ZIP_PARAM));
+  }
+
+  @Nullable
+  public static String getArtifactS3Name(@NotNull Map<String, String> params) {
+    return params.get(ARTIFACTS_S3_NAME_PARAM);
+  }
+
+  @Nullable
+  public static String getArtifactS3Bucket(@NotNull Map<String, String> params) {
+    return params.get(ARTIFACTS_S3_BUCKET_PARAM);
+  }
+
   @Nullable
   public static String getTimeoutMinutes(@NotNull Map<String, String> params) {
     return params.get(TIMEOUT_MINUTES_PARAM);

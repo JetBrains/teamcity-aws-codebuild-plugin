@@ -24,6 +24,22 @@ public interface CodeBuildConstants {
   String BUILD_SPEC_PARAM = "codebuild_build_spec";
   String BUILD_SPEC_LABEL = "Build specification";
 
+  String ARTIFACTS_PARAM = "codebuild_artifacts";
+  String ARTIFACTS_NONE = "none";
+  String ARTIFACTS_S3 = "s3";
+  String ARTIFACTS_LABEL = "Artifacts type";
+  String ARTIFACTS_NONE_LABEL = "No artifacts";
+  String ARTIFACTS_S3_LABEL = "Amazon S3";
+
+  String ARTIFACTS_S3_NAME_PARAM = "codebuild_artifacts_s3_name";
+  String ARTIFACTS_S3_NAME_LABEL = "Artifacts name";
+
+  String ARTIFACTS_S3_BUCKET_PARAM = "codebuild_artifacts_s3_bucket";
+  String ARTIFACTS_S3_BUCKET_LABEL = "Bucket name";
+
+  String ARTIFACTS_S3_ZIP_PARAM = "codebuild_artifacts_s3_zip";
+  String ARTIFACTS_S3_ZIP_LABEL = "Zip artifacts";
+
   String WAIT_PARAM = "codebuild_wait";
   String WAIT_NONE = "none";
   String WAIT_STEP = "step";
@@ -43,5 +59,8 @@ public interface CodeBuildConstants {
 
   String SUCCEEDED = "SUCCEEDED";
 
-  Map<String, String> DEFAULTS = CollectionsUtil.asMap(WAIT_PARAM, WAIT_BUILD);
+  Map<String, String> DEFAULTS = CollectionsUtil.asMap(
+    WAIT_PARAM, WAIT_BUILD,
+    ARTIFACTS_PARAM, ARTIFACTS_NONE
+  );
 }

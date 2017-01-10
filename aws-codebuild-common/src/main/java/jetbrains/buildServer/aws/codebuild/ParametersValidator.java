@@ -8,8 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static jetbrains.buildServer.aws.codebuild.CodeBuildConstants.*;
-import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getProjectName;
-import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.getTimeoutMinutes;
+import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 
 /**
  * @author vbedrosova
@@ -25,8 +24,14 @@ public class ParametersValidator {
     invalids.putAll(AWSCommonParams.validate(params, acceptReferences));
 
     final String projectName = getProjectName(params);
-    if (StringUtil.isEmpty(projectName)) {
+    if (StringUtil.isEmptyOrSpaces(projectName)) {
       invalids.put(PROJECT_NAME_PARAM, PROJECT_NAME_LABEL + " mustn't be empty");
+    }
+
+    if (isUploadS3Artifacts(params)) {
+      if (StringUtil.isEmptyOrSpaces(getArtifactS3Bucket(params))) {
+        invalids.put(ARTIFACTS_S3_BUCKET_PARAM, ARTIFACTS_S3_BUCKET_LABEL + " mustn't be empty");
+      }
     }
 
     final String timeoutMinutes = getTimeoutMinutes(params);
