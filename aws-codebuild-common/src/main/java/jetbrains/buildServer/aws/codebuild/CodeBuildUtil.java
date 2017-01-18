@@ -65,4 +65,16 @@ public final class CodeBuildUtil {
       return DEFAULT_TIMEOUT_MINUTES;
     }
   }
+
+  public static boolean isSucceeded(@NotNull String status) {
+    return CodeBuildConstants.SUCCEEDED.equals(status);
+  }
+
+  public static boolean isInProgress(@NotNull String status) {
+    return CodeBuildConstants.IN_PROGRESS.equals(status);
+  }
+
+  public static boolean isFailed(@NotNull String status) {
+    return CodeBuildConstants.FAILED.equals(status);
+  }
 }

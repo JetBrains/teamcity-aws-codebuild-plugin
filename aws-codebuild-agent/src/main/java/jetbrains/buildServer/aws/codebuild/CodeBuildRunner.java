@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 
@@ -23,7 +24,7 @@ import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
  */
 public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuildRunner {
   @NotNull
-  private final ArrayList<CodeBuildBuildContext> myCodeBuildBuilds = new ArrayList<>();
+  private final List<CodeBuildBuildContext> myCodeBuildBuilds = new CopyOnWriteArrayList<>();
 
   public CodeBuildRunner(@NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher) {
     eventDispatcher.addListener(this);
@@ -124,13 +125,18 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   }
 
   @Override
+  public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
+    super.buildStarted(runningBuild);
+    myCodeBuildBuilds.clear();
+  }
+
+  @Override
   public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
     super.beforeBuildFinish(build, buildStatus);
 
     while (!myCodeBuildBuilds.isEmpty() && build.getInterruptReason() == null) {
-      final Iterator<CodeBuildBuildContext> it = myCodeBuildBuilds.iterator();
-      while (it.hasNext()) {
-        if (finished(it.next(), build)) it.remove();
+      for (CodeBuildBuildContext next : new ArrayList<>(myCodeBuildBuilds)) {
+        if (finished(next, build)) myCodeBuildBuilds.remove(next);
       }
       try {
         Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
@@ -138,12 +144,13 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         break;
       }
     }
+    myCodeBuildBuilds.clear();
   }
 
   private boolean finished(@NotNull CodeBuildBuildContext context, @NotNull AgentRunningBuild build) {
     final List<Build> builds = createClient(context.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(context.codeBuildBuildId)).getBuilds();
 
-    if (builds.isEmpty()) {
+    if (builds == null || builds.isEmpty()) {
       build.getBuildLogger().warning("No AWS CodeBuild build with id=" + context.codeBuildBuildId + " found");
       return true;
     }
@@ -153,12 +160,13 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     }
 
     final Build codeBuildBuild = builds.iterator().next();
+
+    reportPhases(codeBuildBuild, context, build);
+
     if (codeBuildBuild.getBuildComplete()) {
       // import logs?
-      if (CodeBuildConstants.SUCCEEDED.equals(codeBuildBuild.getBuildStatus())) {
-        build.getBuildLogger().message(getProjectName(context.params) + " build with id=" + context.codeBuildBuildId + " succeeded");
-      } else {
-        build.getBuildLogger().logBuildProblem(createBuildProblem(build, codeBuildBuild, context.params));
+      if (isSucceeded(codeBuildBuild.getBuildStatus())) {
+        build.getBuildLogger().message(getBuildString(context) + " succeeded");
       }
       return true;
     }
@@ -166,37 +174,119 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   }
 
   @NotNull
-  private BuildProblemData createBuildProblem(@NotNull AgentRunningBuild build,@NotNull Build codeBuildBuild, @NotNull Map<String, String> runnerParams) {
-    return BuildProblemData.createBuildProblem(
-      String.valueOf(getProblemIdentity(build, codeBuildBuild, runnerParams)),
-      CodeBuildConstants.BUILD_PROBLEM_TYPE,
-      getProblemDescription(codeBuildBuild, runnerParams));
+  private static String getBuildString(@NotNull CodeBuildBuildContext context) {
+    return getProjectName(context.params) + " build with id=" + context.codeBuildBuildId;
+  }
+
+  private void reportPhases(@NotNull Build codeBuildBuild, @NotNull CodeBuildBuildContext context, @NotNull AgentRunningBuild build) {
+    if (codeBuildBuild.getPhases() == null || codeBuildBuild.getPhases().size() <= context.prevPhases.size()) return;
+
+    final String buildString = getBuildString(context);
+    build.getBuildLogger().targetStarted(buildString);
+    try {
+      for (BuildPhase phase : codeBuildBuild.getPhases()) {
+        final String phaseName = phase.getPhaseType();
+        if (context.prevPhases.contains(phaseName)) continue;
+
+        final String format = getFormat(phase, phaseName);
+        final String status = phase.getPhaseStatus();
+        if (status == null || isInProgress(status)) {
+          build.getBuildLogger().message(String.format(format, "is in progress"));
+        } else {
+          context.prevPhases.add(phaseName);
+
+          if (isSucceeded(status)) {
+            build.getBuildLogger().message(String.format(format, "succeeded"));
+          } else {
+            if (isFailed(status)) {
+              build.getBuildLogger().error(String.format(format, "failed"));
+            } else {
+              build.getBuildLogger().error(String.format(format, "finished with status " + status));
+            }
+            build.getBuildLogger().logBuildProblem(createBuildProblem(phase, context.params, build.getCheckoutDirectory().getAbsolutePath()));
+          }
+        }
+      }
+    } finally {
+      build.getBuildLogger().targetFinished(buildString);
+    }
   }
 
   @NotNull
-  private String getProblemDescription(@NotNull Build codeBuildBuild, @NotNull Map<String, String> runnerParams) {
-    final String status = codeBuildBuild.getBuildStatus();
+  private String getFormat(BuildPhase phase, String phaseName) {
+    final Long phaseDuration = phase.getDurationInSeconds();
+    return phaseDuration == null ?
+      phaseName + " %s" :
+      phaseName + " %s in " + phaseDuration + StringUtil.pluralize(" seconds", phaseDuration.intValue());
+  }
+
+  @NotNull
+  private BuildProblemData createBuildProblem(@NotNull BuildPhase failedPhase, @NotNull Map<String, String> runnerParams, @NotNull String checkoutDir) {
+    return BuildProblemData.createBuildProblem(
+      getProblemIdentity(checkoutDir, failedPhase, runnerParams),
+      CodeBuildConstants.BUILD_PROBLEM_TYPE,
+      getProblemDescription(failedPhase, runnerParams));
+  }
+
+  @NotNull
+  private String getProblemDescription(@NotNull BuildPhase failedPhase, @NotNull Map<String, String> runnerParams) {
     final StringBuilder res = new StringBuilder(getProjectName(runnerParams));
-    res.append(" build ");
-    if ("FAILED".equals(status)) {
-      res.append("failed");
+    res.append(" ").append(failedPhase.getPhaseType()).append(" phase ");
+    if (failedPhase.getContexts().isEmpty()) {
+      if (isFailed(failedPhase.getPhaseStatus())) {
+        res.append("failed");
+      } else {
+        res.append("finished with status: ").append(failedPhase.getPhaseStatus());
+      }
     } else {
-      res.append("finished with status: ").append(status);
+      res.append(": ");
+      for (int i = 0; i < failedPhase.getContexts().size(); ++i) {
+        if (i > 0) {
+          res.append("; ");
+        }
+        res.append(failedPhase.getContexts().get(i).getMessage());
+      }
     }
     return res.toString();
   }
 
-  private int getProblemIdentity(@NotNull AgentRunningBuild build, @NotNull Build codeBuildBuild, @NotNull Map<String, String> runnerParams) {
-    return AWSCommonParams.calculateIdentity(build.getCheckoutDirectory().getAbsolutePath(), runnerParams, getProjectName(runnerParams), codeBuildBuild.getBuildStatus());
+
+  @NotNull
+  private String getProblemIdentity(@NotNull String checkoutDir, @NotNull BuildPhase failedPhase, @NotNull Map<String, String> runnerParams) {
+    final ArrayList<String> otherParts = new ArrayList<>();
+    otherParts.add(getProjectName(runnerParams));
+    otherParts.add(failedPhase.getPhaseType());
+    otherParts.add(failedPhase.getPhaseStatus());
+    for (PhaseContext phaseContext : failedPhase.getContexts()) {
+      if (StringUtil.isNotEmpty(phaseContext.getStatusCode())) otherParts.add(phaseContext.getStatusCode());
+      if (StringUtil.isNotEmpty(phaseContext.getMessage())) otherParts.add(phaseContext.getMessage());
+    }
+    return String.valueOf(AWSCommonParams.calculateIdentity(checkoutDir, runnerParams, otherParts));
   }
 
   private static final class CodeBuildBuildContext {
     @NotNull private final String codeBuildBuildId;
     @NotNull private final Map<String, String> params;
+    @NotNull private Set<String> prevPhases = new HashSet<>();
 
     private CodeBuildBuildContext(@NotNull String codeBuildBuildId, @NotNull Map<String, String> params) {
       this.codeBuildBuildId = codeBuildBuildId;
       this.params = params;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      CodeBuildBuildContext that = (CodeBuildBuildContext) o;
+
+      return codeBuildBuildId.equals(that.codeBuildBuildId);
+    }
+
+    @Override
+    public int hashCode() {
+      return codeBuildBuildId.hashCode();
     }
   }
 }

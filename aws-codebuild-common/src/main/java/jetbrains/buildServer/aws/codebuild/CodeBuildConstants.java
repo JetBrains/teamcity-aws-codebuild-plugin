@@ -58,6 +58,8 @@ public interface CodeBuildConstants {
   long POLL_INTERVAL = 10000;
 
   String SUCCEEDED = "SUCCEEDED";
+  String FAILED = "FAILED";
+  String IN_PROGRESS = "IN_PROGRESS";
 
   Map<String, String> DEFAULTS = CollectionsUtil.asMap(
     WAIT_PARAM, WAIT_BUILD,
