@@ -48,7 +48,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
               .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 
-        runningBuild.getBuildLogger().message(getProjectName(params) + " build with id=" + buildId + " started");
+        runningBuild.getBuildLogger().message("Build " + buildId + " started");
 
         if (isWaitStep(runnerParameters)) {
           final CodeBuildBuildContext c = new CodeBuildBuildContext(buildId, runnerParameters);
@@ -175,7 +175,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
   @NotNull
   private static String getBuildString(@NotNull CodeBuildBuildContext context) {
-    return getProjectName(context.params) + " build with id=" + context.codeBuildBuildId;
+    return "Build " + context.codeBuildBuildId;
   }
 
   private void reportPhases(@NotNull Build codeBuildBuild, @NotNull CodeBuildBuildContext context, @NotNull AgentRunningBuild build) {
