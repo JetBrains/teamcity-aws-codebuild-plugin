@@ -77,4 +77,14 @@ public final class CodeBuildUtil {
   public static boolean isFailed(@NotNull String status) {
     return CodeBuildConstants.FAILED.equals(status);
   }
+
+  @NotNull
+  public static String getBuildLink(@NotNull String buildId, @NotNull String region) {
+    return String.format("https://console.aws.amazon.com/codebuild/home?region=%s#/builds/%s/view/new", region, buildId);
+  }
+
+  @NotNull
+  public static String getBuildLogLink(@NotNull String buildId, @NotNull String projectName, @NotNull String region) {
+    return String.format("https://console.aws.amazon.com/cloudwatch/home?region=%s#logEventViewer:group=/aws/codebuild/%s;stream=%s", region, projectName, buildId.replace(projectName + ":", ""));
+  }
 }

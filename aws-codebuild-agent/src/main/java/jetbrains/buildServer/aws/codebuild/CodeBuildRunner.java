@@ -39,16 +39,19 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         final Map<String, String> params = validateParams();
         // artifacts
         final Map<String, String> runnerParameters = context.getRunnerParameters();
+        final String projectName = getProjectName(runnerParameters);
         final String buildId = createClient(params).startBuild(
             new StartBuildRequest()
-              .withProjectName(getProjectName(runnerParameters))
+              .withProjectName(projectName)
               .withSourceVersion(getSourceVersion(runnerParameters))
               .withBuildspecOverride(getBuildSpec(runnerParameters))
               .withArtifactsOverride(getArtifacts())
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
               .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 
-        runningBuild.getBuildLogger().message("Build " + buildId + " started");
+        final String region = params.get(AWSCommonParams.REGION_NAME_PARAM);
+        runningBuild.getBuildLogger().message("Build " + buildId + " started " + getBuildLink(buildId, region));
+        runningBuild.getBuildLogger().message("View the entire log in the AWS CloudWatch console " + getBuildLogLink(buildId, projectName, region));
 
         if (isWaitStep(runnerParameters)) {
           final CodeBuildBuildContext c = new CodeBuildBuildContext(buildId, runnerParameters);
