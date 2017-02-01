@@ -50,7 +50,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 
         final String region = params.get(AWSCommonParams.REGION_NAME_PARAM);
-        runningBuild.getBuildLogger().message("Build " + buildId + " started " + getBuildLink(buildId, region));
+        runningBuild.getBuildLogger().message("Build " + getBuildLink(buildId, region) + " started");
         runningBuild.getBuildLogger().message("View the entire log in the AWS CloudWatch console " + getBuildLogLink(buildId, projectName, region));
 
         if (isWaitStep(runnerParameters)) {
