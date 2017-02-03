@@ -19,6 +19,8 @@ apply plugin: 'com.github.rodm.teamcity-server'
 dependencies {
     compile project(':aws-codebuild-common')
     agent project(path: ':aws-codebuild-agent', configuration: 'plugin')
+    // the dependency is required for 9.1 compatibility
+    compileOnly files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/server.jar")
 }
 
 teamcity {
