@@ -43,7 +43,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         final String buildId = createClient(params).startBuild(
             new StartBuildRequest()
               .withProjectName(projectName)
-              .withSourceVersion(getSourceVersion(runnerParameters))
+              .withSourceVersion(getSourceVersion())
               .withBuildspecOverride(getBuildSpec(runnerParameters))
               .withArtifactsOverride(getArtifacts())
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
@@ -65,6 +65,29 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         } else if (isWaitBuild(runnerParameters)) {
           myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
         }
+      }
+
+      @Nullable
+      private String getSourceVersion() throws RunBuildException {
+        String sourceVersion = CodeBuildUtil.getSourceVersion(context.getRunnerParameters());
+        if (StringUtil.isNotEmpty(sourceVersion)) return sourceVersion;
+
+        final String vcsRootId = runningBuild.getSharedConfigParameters().get(CodeBuildConstants.GIT_HUB_VCS_ROOT_ID_CONFIG_PARAM);
+        if (StringUtil.isEmptyOrSpaces(vcsRootId)) return null;
+
+        if (CodeBuildConstants.UNKNOWN_GIT_HUB_VCS_ROOT_ID.equals(vcsRootId)) {
+          throw new RunBuildException("Failed to find the GitHub VCS root ID and use it to resolve " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
+        }
+
+        final String sysPropName = "build.vcs.number." + vcsRootId;
+        sourceVersion = context.getBuildParameters().getSystemProperties().get(sysPropName);
+
+        if (StringUtil.isEmptyOrSpaces(sourceVersion)) {
+          throw new RunBuildException("Can't use empty %" + sysPropName + "% system property value as " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
+        }
+
+        runningBuild.getBuildLogger().message("Using %" + sysPropName + "% system property value" + sourceVersion + " as the AWS CodeBuild source version");
+        return sourceVersion;
       }
 
       @NotNull

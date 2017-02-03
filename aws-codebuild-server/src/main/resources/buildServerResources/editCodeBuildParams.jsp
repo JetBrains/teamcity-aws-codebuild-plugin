@@ -34,11 +34,13 @@
             <span class="error" id="error_${project_name_param}"></span>
         </td>
     </tr>
-    <tr>
+    <tr class="advancedSetting">
         <th><label for="${source_version_param}">${source_version_label}:</label></th>
         <td><props:textProperty name="${source_version_param}" className="longField" maxlength="256"/>
             <span class="smallNote">Version ID (if the source code is in Amazon S3) or commit ID (if AWS CodeCommit or GitHub).</span>
-            <span class="smallNote">Leave blank to build the latest version.</span>
+            <span class="smallNote">Leave blank to:</span>
+            <span class="smallNote">- use TeamCity %build.vcs.number.&lt;VCS root ID&gt;% if there is a GitHub VCS root attached to the build type</span>
+            <span class="smallNote">- build the the latest version.</span>
             <span class="error" id="error_${source_version_param}"></span>
         </td>
     </tr>

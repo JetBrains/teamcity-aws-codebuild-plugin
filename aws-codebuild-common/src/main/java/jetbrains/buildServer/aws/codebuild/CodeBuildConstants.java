@@ -65,4 +65,7 @@ public interface CodeBuildConstants {
     WAIT_PARAM, WAIT_BUILD,
     ARTIFACTS_PARAM, ARTIFACTS_NONE
   );
+
+  String GIT_HUB_VCS_ROOT_ID_CONFIG_PARAM = "codebuild.github.vcs.root.id";
+  String UNKNOWN_GIT_HUB_VCS_ROOT_ID = "<unknown>";
 }

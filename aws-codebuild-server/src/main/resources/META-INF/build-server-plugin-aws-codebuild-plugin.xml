@@ -23,4 +23,5 @@
     <bean id="awsCommonParams" class="jetbrains.buildServer.util.amazon.AWSCommonParams"/>
     <bean id="codeBuildFeature" class="jetbrains.buildServer.aws.codebuild.CodeBuildRunType"/>
     <bean id="codeBuildProblemDetailsProvider" class="jetbrains.buildServer.aws.codebuild.CodeBuildProblemDetailsProvider"/>
+    <bean id="gitHubVCSRootIdParameterProvider" class="jetbrains.buildServer.aws.codebuild.GitHubVCSRootIdParameterProvider"/>
 </beans>

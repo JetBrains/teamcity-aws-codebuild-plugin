@@ -23,7 +23,7 @@
 </div>
 
 <div class="parameter">
-    ${source_version_label}: <props:displayValue name="${source_version_param}" emptyValue="latest"/>
+    ${source_version_label}: <props:displayValue name="${source_version_param}" emptyValue="empty"/>
 </div>
 
 <div class="parameter">
