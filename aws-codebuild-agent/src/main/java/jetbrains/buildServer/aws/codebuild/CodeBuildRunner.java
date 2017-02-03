@@ -86,7 +86,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
           throw new RunBuildException("Can't use empty %" + sysPropName + "% system property value as " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
         }
 
-        runningBuild.getBuildLogger().message("Using %" + sysPropName + "% system property value" + sourceVersion + " as the AWS CodeBuild source version");
+        runningBuild.getBuildLogger().message("Using %" + sysPropName + "% system property value " + sourceVersion + " as the AWS CodeBuild source version");
         return sourceVersion;
       }
 
