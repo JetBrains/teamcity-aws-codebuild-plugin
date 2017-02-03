@@ -56,7 +56,9 @@
         <td><props:selectProperty name="${artifacts_param}" onchange="codeBuildUpdateArtifactsSettingsVisibility();" className="longField" enableFilter="true">
             <props:option value="${artifacts_none}">${artifacts_none_label}</props:option>
             <props:option value="${artifacts_s3}">${artifacts_s3_label}</props:option>
-        </props:selectProperty></td>
+        </props:selectProperty>
+        <span class="smallNote">Will override the project's default artifact settings.</span>
+        <span class="error" id="error_${artifacts_param}"></span></td>
     </tr>
     <tr class="advancedSetting artifactsSetting">
         <th><label for="${zip_param}">${zip_label}:</label></th>
@@ -65,22 +67,22 @@
     <tr class="advancedSetting artifactsSetting">
         <th><label for="${artifacts_name_param}">${artifacts_name_label}:</label></th>
         <td><props:textProperty name="${artifacts_name_param}" className="longField" maxlength="256"/>
-            <span id="noteFolder" class="smallNote">Folder name. Leave blank to use the default value.</span>
-            <span id="noteArchive" class="smallNote">Archive name. Leave blank to use the default value.</span>
+            <span id="noteFolder" class="smallNote">Folder name. Leave blank to use the project's default value.</span>
+            <span id="noteArchive" class="smallNote">Archive name. Leave blank to use the project's default value.</span>
             <span class="error" id="error_${artifacts_name_param}"></span>
         </td>
     </tr>
     <tr class="advancedSetting artifactsSetting">
         <th><label for="${bucket_param}">${bucket_label}: <l:star/></label></th>
         <td><props:textProperty name="${bucket_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">S3 bucket to upload artifacts to.</span>
+            <span class="smallNote">S3 bucket to upload artifacts to. Leave blank to use the project's default value.</span>
             <span class="error" id="error_${bucket_param}"></span>
         </td>
     </tr>
     <tr class="advancedSetting">
         <th><label for="${timeout_minutes_param}">${timeout_minutes_label}:</label></th>
         <td><props:textProperty name="${timeout_minutes_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">Build timeout must be 5 to 480 minutes. Leave blank to use the default value.</span>
+            <span class="smallNote">Build timeout must be 5 to 480 minutes. Leave blank to use the project's default value.</span>
             <span class="error" id="error_${timeout_minutes_param}"></span>
         </td>
     </tr>
