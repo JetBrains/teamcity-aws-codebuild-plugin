@@ -92,6 +92,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
       @NotNull
       private Collection<EnvironmentVariable> getEnvironmentVariables() {
+        runningBuild.getBuildLogger().message("Will pass build system properties as Environment variables to the AWS CodeBuild");
         return CollectionsUtil.convertCollection(context.getBuildParameters().getSystemProperties().entrySet(), new Converter<EnvironmentVariable, Map.Entry<String, String>>() {
           @Override
           public EnvironmentVariable createFrom(@NotNull Map.Entry<String, String> e) {
