@@ -5,7 +5,10 @@ import com.amazonaws.services.codebuild.model.*;
 import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.RunBuildException;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.messages.ErrorData;
+import jetbrains.buildServer.messages.Status;
 import jetbrains.buildServer.util.CollectionsUtil;
 import jetbrains.buildServer.util.Converter;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -18,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
+import static jetbrains.buildServer.messages.DefaultMessagesInfo.*;
 
 /**
  * @author vbedrosova
@@ -36,11 +40,9 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     return new BuildProcessAdapter() {
       @Override
       public void start() throws RunBuildException {
-        final Map<String, String> params = validateParams();
-        // artifacts
-        final Map<String, String> runnerParameters = context.getRunnerParameters();
+        final Map<String, String> runnerParameters = validateParams();
         final String projectName = getProjectName(runnerParameters);
-        final String buildId = createClient(params).startBuild(
+        final String buildId = createClient(runnerParameters).startBuild(
             new StartBuildRequest()
               .withProjectName(projectName)
               .withSourceVersion(getSourceVersion())
@@ -49,21 +51,26 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
               .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
 
-        final String region = params.get(AWSCommonParams.REGION_NAME_PARAM);
-        runningBuild.getBuildLogger().message("Build " + getBuildLink(buildId, region) + " started");
+        final String region = runnerParameters.get(AWSCommonParams.REGION_NAME_PARAM);
+        runningBuild.getBuildLogger().message(projectName + " build " + getBuildLink(buildId, region) + " started");
         runningBuild.getBuildLogger().message("View the entire log in the AWS CloudWatch console " + getBuildLogLink(buildId, projectName, region));
 
+        final CodeBuildBuildContext c = new CodeBuildBuildContext(buildId, projectName, runnerParameters);
         if (isWaitStep(runnerParameters)) {
-          final CodeBuildBuildContext c = new CodeBuildBuildContext(buildId, runnerParameters);
-          while (!finished(c, runningBuild)) {
-            try {
-              Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
-            } catch (InterruptedException e) {
-              break;
+          startContext(c, runningBuild);
+          try {
+            while (!finished(c, runningBuild)) {
+              try {
+                Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
+              } catch (InterruptedException e) {
+                break;
+              }
             }
+          } finally {
+            log(runningBuild, getBlockEnd(c));
           }
         } else if (isWaitBuild(runnerParameters)) {
-          myCodeBuildBuilds.add(new CodeBuildBuildContext(buildId, runnerParameters));
+          myCodeBuildBuilds.add(c);
         }
       }
 
@@ -129,9 +136,33 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     };
   }
 
+  private void startContext(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild runningBuild) {
+    log(runningBuild, getBlockStart(c));
+    log(runningBuild, forContext(c, createTextMessage("Waiting for build " + c.codeBuildBuildId + " finish")));
+  }
+
   @NotNull
   private AWSCodeBuildClient createClient(Map<String, String> params) {
     return AWSCommonParams.createAWSClients(params).createCodeBuildClient();
+  }
+
+  @NotNull
+  private BuildMessage1 getBlockStart(@NotNull CodeBuildBuildContext c) {
+    return forContext(c, createBlockStart(c.codeBuildProjectName, BLOCK_TYPE_TARGET));
+  }
+
+  @NotNull
+  private BuildMessage1 getBlockEnd(@NotNull CodeBuildBuildContext c) {
+    return forContext(c, createBlockEnd(c.codeBuildProjectName, BLOCK_TYPE_TARGET));
+  }
+
+  @NotNull
+  private BuildMessage1 forContext(@NotNull CodeBuildBuildContext c, @NotNull BuildMessage1 m) {
+    return m.updateFlowId(c.codeBuildBuildId);
+  }
+
+  private void log(@NotNull AgentRunningBuild b, @NotNull BuildMessage1 m) {
+    b.getBuildLogger().getFlowLogger(m.getFlowId()).logMessage(m);
   }
 
   @NotNull
@@ -161,9 +192,16 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
     super.beforeBuildFinish(build, buildStatus);
 
+    for (CodeBuildBuildContext c : myCodeBuildBuilds) {
+      startContext(c, build);
+    }
+
     while (!myCodeBuildBuilds.isEmpty() && build.getInterruptReason() == null) {
       for (CodeBuildBuildContext next : new ArrayList<>(myCodeBuildBuilds)) {
-        if (finished(next, build)) myCodeBuildBuilds.remove(next);
+        if (finished(next, build)) {
+          myCodeBuildBuilds.remove(next);
+          log(build, getBlockEnd(next));
+        }
       }
       try {
         Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
@@ -174,26 +212,26 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     myCodeBuildBuilds.clear();
   }
 
-  private boolean finished(@NotNull CodeBuildBuildContext context, @NotNull AgentRunningBuild build) {
-    final List<Build> builds = createClient(context.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(context.codeBuildBuildId)).getBuilds();
+  private boolean finished(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
+    final List<Build> builds = createClient(c.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(c.codeBuildBuildId)).getBuilds();
 
     if (builds == null || builds.isEmpty()) {
-      build.getBuildLogger().warning("No AWS CodeBuild build with id=" + context.codeBuildBuildId + " found");
+      log(build, forContext(c, createTextMessage("No AWS CodeBuild build with id=" + c.codeBuildBuildId + " found", Status.WARNING)));
       return true;
     }
 
     if (builds.size() > 1) {
-      build.getBuildLogger().warning("Found several AWS CodeBuild builds with id=" + context.codeBuildBuildId + ". Will process the first one.");
+      log(build, forContext(c, createTextMessage("Found several AWS CodeBuild builds with id=" + c.codeBuildBuildId + ". Will process the first one.", Status.WARNING)));
     }
 
     final Build codeBuildBuild = builds.iterator().next();
 
-    reportPhases(codeBuildBuild, context, build);
+    reportPhases(codeBuildBuild, c, build);
 
     if (codeBuildBuild.getBuildComplete()) {
-      // import logs?
+      // import logs in case of failure?
       if (isSucceeded(codeBuildBuild.getBuildStatus())) {
-        build.getBuildLogger().message(getBuildString(context) + " succeeded");
+        log(build, (forContext(c, createTextMessage(getBuildString(c) + " succeeded"))));
       }
       return true;
     }
@@ -201,46 +239,48 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   }
 
   @NotNull
-  private static String getBuildString(@NotNull CodeBuildBuildContext context) {
-    return "Build " + context.codeBuildBuildId;
+  private static String getBuildString(@NotNull CodeBuildBuildContext c) {
+    return "Build " + c.codeBuildBuildId;
   }
 
-  private void reportPhases(@NotNull Build codeBuildBuild, @NotNull CodeBuildBuildContext context, @NotNull AgentRunningBuild build) {
-    if (codeBuildBuild.getPhases() == null || codeBuildBuild.getPhases().size() <= context.prevPhases.size()) return;
+  private void reportPhases(@NotNull Build codeBuildBuild, @NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
+    if (codeBuildBuild.getPhases() == null || codeBuildBuild.getPhases().size() <= c.prevPhases.size()) return;
 
-    final String buildString = getBuildString(context);
-    build.getBuildLogger().targetStarted(buildString);
-    try {
-      for (BuildPhase phase : codeBuildBuild.getPhases()) {
-        final String phaseName = phase.getPhaseType();
-        if (context.prevPhases.contains(phaseName)) continue;
+    for (BuildPhase phase : codeBuildBuild.getPhases()) {
+      final String phaseName = phase.getPhaseType();
+      if (isPhaseReported(phaseName, c)) continue;
 
-        final String format = getFormat(phase, phaseName);
-        final String status = phase.getPhaseStatus();
-        if (status == null || isInProgress(status)) {
-          build.getBuildLogger().message(String.format(format, "is in progress"));
+      final String format = getFormat(phase, phaseName);
+      final String status = phase.getPhaseStatus();
+      if (status == null || isInProgress(status)) {
+        if (c.prevPhases.get(phaseName) == null) { // not yet reported
+          log(build, forContext(c, createProgressMessage(String.format(format, "in progress")).updateTags(DefaultMessagesInfo.TAG_INTERNAL)));
+        }
+        c.prevPhases.put(phaseName, status);
+      } else {
+        c.prevPhases.put(phaseName, status);
+
+        if (isSucceeded(status)) {
+          log(build, forContext(c, createTextMessage(String.format(format, "succeeded"))));
         } else {
-          context.prevPhases.add(phaseName);
-
-          if (isSucceeded(status)) {
-            build.getBuildLogger().message(String.format(format, "succeeded"));
+          if (isFailed(status)) {
+            log(build, forContext(c, createTextMessage(String.format(format, "failed"), Status.ERROR)));
           } else {
-            if (isFailed(status)) {
-              build.getBuildLogger().error(String.format(format, "failed"));
-            } else {
-              build.getBuildLogger().error(String.format(format, "finished with status " + status));
-            }
-            build.getBuildLogger().logBuildProblem(createBuildProblem(phase, context.params, build.getCheckoutDirectory().getAbsolutePath()));
+            log(build, forContext(c, createTextMessage(String.format(format, "finished with status " + status), Status.ERROR)));
           }
+          log(build, forContext(c, createBuildProblemMessage(createBuildProblem(phase, c.params, build.getCheckoutDirectory().getAbsolutePath()))));
         }
       }
-    } finally {
-      build.getBuildLogger().targetFinished(buildString);
     }
   }
 
+  private boolean isPhaseReported(@NotNull String phaseName, @NotNull CodeBuildBuildContext c) {
+    final String status = c.prevPhases.get(phaseName);
+    return status != null && !isInProgress(status);
+  }
+
   @NotNull
-  private String getFormat(BuildPhase phase, String phaseName) {
+  private String getFormat(@NotNull BuildPhase phase, @NotNull String phaseName) {
     final Long phaseDuration = phase.getDurationInSeconds();
     return phaseDuration == null ?
       phaseName + " %s" :
@@ -293,11 +333,13 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
   private static final class CodeBuildBuildContext {
     @NotNull private final String codeBuildBuildId;
+    @NotNull private final String codeBuildProjectName;
     @NotNull private final Map<String, String> params;
-    @NotNull private Set<String> prevPhases = new HashSet<>();
+    @NotNull private Map<String, String> prevPhases = new HashMap<>();
 
-    private CodeBuildBuildContext(@NotNull String codeBuildBuildId, @NotNull Map<String, String> params) {
+    private CodeBuildBuildContext(@NotNull String codeBuildBuildId, @NotNull String codeBuildProjectName, @NotNull Map<String, String> params) {
       this.codeBuildBuildId = codeBuildBuildId;
+      this.codeBuildProjectName = codeBuildProjectName;
       this.params = params;
     }
 
