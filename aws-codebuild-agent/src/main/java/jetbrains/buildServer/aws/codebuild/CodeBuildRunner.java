@@ -230,8 +230,12 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
     if (codeBuildBuild.getBuildComplete()) {
       // import logs in case of failure?
-      if (isSucceeded(codeBuildBuild.getBuildStatus())) {
-        log(build, (forContext(c, createTextMessage(getBuildString(c) + " succeeded"))));
+      final String format = getBuildString(c) + " %s " + getBuildLink(c.codeBuildBuildId, c.params.get(AWSCommonParams.REGION_NAME_PARAM));
+      final String status = codeBuildBuild.getBuildStatus();
+      if (isSucceeded(status)) {
+        log(build, (forContext(c, createTextMessage(String.format(format, "succeeded")))));
+      } else {
+        log(build, (forContext(c, createTextMessage(String.format(format, isFailed(status) ? "failed" : "finished with status " + status), Status.ERROR))));
       }
       return true;
     }
@@ -263,11 +267,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         if (isSucceeded(status)) {
           log(build, forContext(c, createTextMessage(String.format(format, "succeeded"))));
         } else {
-          if (isFailed(status)) {
-            log(build, forContext(c, createTextMessage(String.format(format, "failed"), Status.ERROR)));
-          } else {
-            log(build, forContext(c, createTextMessage(String.format(format, "finished with status " + status), Status.ERROR)));
-          }
+          log(build, forContext(c, createTextMessage(String.format(format, isFailed(status) ? "failed" : "finished with status " + status), Status.ERROR)));
           log(build, forContext(c, createBuildProblemMessage(createBuildProblem(phase, c.params, build.getCheckoutDirectory().getAbsolutePath()))));
         }
       }
