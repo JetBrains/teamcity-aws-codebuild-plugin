@@ -1,0 +1,21 @@
+.runnerFormTable .artifactsSetting {
+    display: none;
+}
+
+.runnerFormTable .magicButton {
+    cursor: pointer;
+}
+
+.codeBuildPopup ul {
+    margin: 0;
+    max-height: 15em;
+    padding: 0;
+    overflow: auto;
+    min-width: 15em;
+}
+
+.codeBuildPopup ul li {
+    padding: 0 .5em 0;
+    list-style: none;
+    white-space: nowrap;
+}

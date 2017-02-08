@@ -17,12 +17,17 @@
 <%@ taglib prefix="props" tagdir="/WEB-INF/tags/props" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
+<%@ taglib prefix="bs" tagdir="/WEB-INF/tags" %>
 
-<style type="text/css">
-    .runnerFormTable .artifactsSetting {
-        display: none;
-    }
-</style>
+<bs:linkScript>
+    /js/bs/basePopup.js
+    /js/bs/pluginProperties.js
+    ${teamcityPluginResourcesPath}scripts.js
+</bs:linkScript>
+<bs:linkCSS>
+    ${teamcityPluginResourcesPath}styles.css
+</bs:linkCSS>
+
 
 <%@include file="paramsConstants.jspf"%>
 <jsp:include page="editAWSCommonParams.jsp"/>
@@ -30,7 +35,7 @@
 <l:settingsGroup title="AWS CodeBuild settings">
     <tr>
         <th><label for="${project_name_param}">${project_name_label}: <l:star/></label></th>
-        <td><props:textProperty name="${project_name_param}" className="longField" maxlength="256"/>
+        <td><props:textProperty name="${project_name_param}" className="longField" maxlength="256"/><span class="icon-magic magicButton" onclick="BS.CodeBuildProjectNamePopup.showPopup(this);" title="Suggest project name"></span>
             <span class="error" id="error_${project_name_param}"></span>
         </td>
     </tr>
@@ -53,7 +58,7 @@
     </tr>
     <tr class="advancedSetting">
         <th><label for="${artifacts_param}">${artifacts_label}: <l:star/></label></th>
-        <td><props:selectProperty name="${artifacts_param}" onchange="codeBuildUpdateArtifactsSettingsVisibility();" className="longField" enableFilter="true">
+        <td><props:selectProperty name="${artifacts_param}" onchange="BS.CodeBuild.updateArtifactsSettingsVisibility();" className="longField" enableFilter="true">
             <props:option value="${artifacts_none}">${artifacts_none_label}</props:option>
             <props:option value="${artifacts_s3}">${artifacts_s3_label}</props:option>
         </props:selectProperty>
@@ -62,7 +67,7 @@
     </tr>
     <tr class="advancedSetting artifactsSetting">
         <th><label for="${zip_param}">${zip_label}:</label></th>
-        <td><props:checkboxProperty name="${zip_param}" onclick="codeBuildUpdateArtifactsName();"/></td>
+        <td><props:checkboxProperty name="${zip_param}" onclick="BS.CodeBuild.updateArtifactsName();"/></td>
     </tr>
     <tr class="advancedSetting artifactsSetting">
         <th><label for="${artifacts_name_param}">${artifacts_name_label}:</label></th>
@@ -95,26 +100,3 @@
         </props:selectProperty></td>
     </tr>
 </l:settingsGroup>
-<script type="application/javascript">
-    window.codeBuildUpdateArtifactsSettingsVisibility = function () {
-        var showArtifactsSettings = $j('#runnerParams #${artifacts_param} option:selected').val() == '${artifacts_s3}';
-        $j('#runnerParams .artifactsSetting').each(function() {
-            if (showArtifactsSettings) BS.Util.show(this);
-            else BS.Util.hide(this);
-        });
-
-        BS.VisibilityHandlers.updateVisibility('runnerParams');
-    };
-    window.codeBuildUpdateArtifactsName = function () {
-        if ($j('#${zip_param}').is(':checked')) {
-            BS.Util.show('noteArchive');
-            BS.Util.hide('noteFolder');
-        } else {
-            BS.Util.hide('noteArchive');
-            BS.Util.show('noteFolder');
-        }
-        BS.VisibilityHandlers.updateVisibility('runnerParams');
-    };
-    codeBuildUpdateArtifactsSettingsVisibility();
-    codeBuildUpdateArtifactsName();
-</script>

@@ -21,6 +21,8 @@ dependencies {
     agent project(path: ':aws-codebuild-agent', configuration: 'plugin')
     // the dependency is required for 9.1 compatibility
     compileOnly files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/server.jar")
+    // required until https://youtrack.jetbrains.com/issue/TW-46946 is fixed
+    compileOnly files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/web.jar")
 }
 
 teamcity {
