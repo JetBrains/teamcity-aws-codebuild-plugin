@@ -37,9 +37,10 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   @NotNull
   @Override
   public BuildProcess createBuildProcess(@NotNull final AgentRunningBuild runningBuild, @NotNull final BuildRunnerContext context) throws RunBuildException {
-    return new BuildProcessAdapter() {
+    return new SyncBuildProcessAdapter() {
+      @NotNull
       @Override
-      public void start() throws RunBuildException {
+      protected BuildFinishedStatus runImpl() throws RunBuildException {
         final Map<String, String> runnerParameters = validateParams();
         final String projectName = getProjectName(runnerParameters);
         final String buildId = createClient(runnerParameters).startBuild(
@@ -60,6 +61,10 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
           startContext(c, runningBuild);
           try {
             while (!finished(c, runningBuild)) {
+              if (isInterrupted()) {
+                CodeBuildRunner.this.interrupt(c, runningBuild);
+                break;
+              }
               try {
                 Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
               } catch (InterruptedException e) {
@@ -72,6 +77,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
         } else if (isWaitBuild(runnerParameters)) {
           myCodeBuildBuilds.add(c);
         }
+        return isInterrupted() ? BuildFinishedStatus.INTERRUPTED : BuildFinishedStatus.FINISHED_SUCCESS;
       }
 
       @Nullable
@@ -118,12 +124,6 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
             .withName(getArtifactS3Name(params))
             .withLocation(getArtifactS3Bucket(params))
           : null;
-      }
-
-      @NotNull
-      @Override
-      public BuildFinishedStatus waitFor() throws RunBuildException {
-        return BuildFinishedStatus.FINISHED_SUCCESS;
       }
 
       @NotNull
@@ -196,17 +196,28 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       startContext(c, build);
     }
 
-    while (!myCodeBuildBuilds.isEmpty() && build.getInterruptReason() == null) {
+    while (!myCodeBuildBuilds.isEmpty()) {
       for (CodeBuildBuildContext next : new ArrayList<>(myCodeBuildBuilds)) {
-        if (finished(next, build)) {
-          myCodeBuildBuilds.remove(next);
-          log(build, getBlockEnd(next));
+        final boolean buildInterrupted = build.getInterruptReason() != null;
+        boolean finished = false;
+        try {
+          finished = buildInterrupted || finished(next, build);
+          if (buildInterrupted) {
+            interrupt(next, build);
+          }
+        } finally {
+          if (finished) {
+            myCodeBuildBuilds.remove(next);
+            log(build, getBlockEnd(next));
+          }
         }
       }
-      try {
-        Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
-      } catch (InterruptedException e) {
-        break;
+      if (build.getInterruptReason() == null) {
+        try {
+          Thread.sleep(CodeBuildConstants.POLL_INTERVAL);
+        } catch (InterruptedException e) {
+          break;
+        }
       }
     }
     myCodeBuildBuilds.clear();
@@ -240,6 +251,11 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       return true;
     }
     return false;
+  }
+
+  private void interrupt(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
+    log(build, forContext(c, createTextMessage("Stopping " + getBuildString(c), Status.WARNING)));
+    createClient(c.params).stopBuild(new StopBuildRequest().withId(c.codeBuildBuildId));
   }
 
   @NotNull
