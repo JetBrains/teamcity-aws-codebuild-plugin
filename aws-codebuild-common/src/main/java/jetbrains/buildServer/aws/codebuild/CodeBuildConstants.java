@@ -68,4 +68,6 @@ public interface CodeBuildConstants {
 
   String GIT_HUB_VCS_ROOT_ID_CONFIG_PARAM = "codebuild.github.vcs.root.id";
   String UNKNOWN_GIT_HUB_VCS_ROOT_ID = "<unknown>";
+
+  String BUILD_ID_SYSTEM_PROPERTY_FORMAT = "aws.codebuild.%s.build.id";
 }
