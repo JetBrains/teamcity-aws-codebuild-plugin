@@ -5,7 +5,7 @@
 <jsp:useBean id="projects" scope="request" type="java.util.Collection<java.lang.String>"/>
 
 <div class="codeBuildPopup">
-    <c:if test="${fn:length(projects) >= 1}">
+    <c:if test="${fn:length(projects) >= 5}">
         <c:set var="containerId"><bs:id/></c:set>
         <bs:inplaceFilter containerId="${containerId}" activate="true" filterText="&lt;filter projects>"/>
     </c:if>
