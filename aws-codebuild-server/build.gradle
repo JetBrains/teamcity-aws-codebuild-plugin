@@ -25,6 +25,9 @@ dependencies {
     compileOnly files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/web.jar")
 }
 
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
 teamcity {
     server {
         descriptor = file("$rootDir/teamcity-plugin.xml")
