@@ -10,8 +10,9 @@
         <bs:inplaceFilter containerId="${containerId}" activate="true" filterText="&lt;filter projects>"/>
     </c:if>
     <ul id="${containerId}">
-    <c:forEach items="${projects}" var="p">
-        <li class="inplaceFiltered" onclick="BS.CodeBuildProjectNamePopup.fillProjectName('<bs:escapeForJs text="${p}"/>');"><c:out value="${p}"/></li>
-    </c:forEach>
+        <c:forEach items="${projects}" var="p">
+            <li class="inplaceFiltered" onclick="BS.CodeBuildProjectNamePopup.fillProjectName('<bs:escapeForJs text="${p}"/>');"><c:out value="${p}"/></li>
+        </c:forEach>
+        <c:if test="${empty projects}"><span class="italic">No projects found</span></c:if>
     </ul>
 </div>

@@ -19,3 +19,7 @@
     list-style: none;
     white-space: nowrap;
 }
+
+.codeBuildPopup .italic {
+    font-style: italic;
+}
