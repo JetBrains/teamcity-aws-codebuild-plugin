@@ -28,7 +28,7 @@ import static jetbrains.buildServer.messages.DefaultMessagesInfo.*;
  */
 public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuildRunner {
   @NotNull
-  private final List<CodeBuildBuildContext> myCodeBuildBuilds = new CopyOnWriteArrayList<>();
+  private final List<CodeBuildBuildContext> myCodeBuildBuilds = new CopyOnWriteArrayList<CodeBuildBuildContext>();
 
   public CodeBuildRunner(@NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher) {
     eventDispatcher.addListener(this);
@@ -199,7 +199,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     }
 
     while (!myCodeBuildBuilds.isEmpty()) {
-      for (CodeBuildBuildContext next : new ArrayList<>(myCodeBuildBuilds)) {
+      for (CodeBuildBuildContext next : new ArrayList<CodeBuildBuildContext>(myCodeBuildBuilds)) {
         final boolean buildInterrupted = build.getInterruptReason() != null;
         boolean finished = false;
         try {
@@ -338,7 +338,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
   @NotNull
   private String getProblemIdentity(@NotNull String checkoutDir, @NotNull BuildPhase failedPhase, @NotNull Map<String, String> runnerParams) {
-    final ArrayList<String> otherParts = new ArrayList<>();
+    final ArrayList<String> otherParts = new ArrayList<String>();
     otherParts.add(getProjectName(runnerParams));
     otherParts.add(failedPhase.getPhaseType());
     otherParts.add(failedPhase.getPhaseStatus());
@@ -353,7 +353,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     @NotNull private final String codeBuildBuildId;
     @NotNull private final String codeBuildProjectName;
     @NotNull private final Map<String, String> params;
-    @NotNull private Map<String, String> prevPhases = new HashMap<>();
+    @NotNull private Map<String, String> prevPhases = new HashMap<String, String>();
 
     private CodeBuildBuildContext(@NotNull String codeBuildBuildId, @NotNull String codeBuildProjectName, @NotNull Map<String, String> params) {
       this.codeBuildBuildId = codeBuildBuildId;
