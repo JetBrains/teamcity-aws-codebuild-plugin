@@ -24,7 +24,7 @@
     /js/bs/pluginProperties.js
     ${teamcityPluginResourcesPath}scripts.js
 </bs:linkScript>
-<bs:linkCSS>
+<bs:linkCSS dynamic="${true}">
     ${teamcityPluginResourcesPath}styles.css
 </bs:linkCSS>
 
@@ -40,14 +40,16 @@
         </td>
     </tr>
     <tr class="advancedSetting">
-        <th><label for="${source_version_param}">${source_version_label}:</label></th>
-        <td><props:textProperty name="${source_version_param}" className="longField" maxlength="256"/>
-            <span class="smallNote">Version ID (if the source code is in Amazon S3) or commit ID (if AWS CodeCommit or GitHub).</span>
-            <span class="smallNote">Leave blank to:</span>
-            <span class="smallNote">- use TeamCity %build.vcs.number.&lt;VCS root ID&gt;% if there is a GitHub VCS root attached to the build type</span>
-            <span class="smallNote">- build the the latest version.</span>
+        <th><label for="${source_version_param}">${source_version_label}: <l:star/></label></th>
+        <td><props:radioButtonProperty name="${use_build_revision_param}" value="false" id="${use_build_revision_param}_false"/><props:textProperty name="${source_version_param}" className="longField" maxlength="256"/>
+            <span class="smallNote">For GitHub or AWS CodeCommit: Commit ID. For S3: Version ID.</span>
+            <span class="smallNote">Leave blank to build the the latest version.</span>
             <span class="error" id="error_${source_version_param}"></span>
-        </td>
+            <br/>
+            <props:radioButtonProperty name="${use_build_revision_param}" value="true" id="${use_build_revision_param}_true"/><label for="${use_build_revision_param}_true">${use_build_revision_label}</label>
+            <span class="smallNote">For GitHub: use TeamCity %build.vcs.number.&lt;VCS root ID&gt;% as source version if there is a GitHub VCS root attached to the build configuration</span>
+            <span class="smallNote">For S3: zip checkout directory contents, upload to S3 and use as the source code</span>
+            <span class="error" id="error_${use_build_revision_param}"></span></td>
     </tr>
     <tr class="advancedSetting">
         <th><label for="${build_spec_param}">${build_spec_label}:</label></th>

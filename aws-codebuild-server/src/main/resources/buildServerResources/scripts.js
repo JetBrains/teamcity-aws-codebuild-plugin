@@ -18,6 +18,21 @@
                 BS.Util.show('noteFolder');
             }
             BS.VisibilityHandlers.updateVisibility('runnerParams');
+        },
+        updateSourceVersionVisibility: function (sourceType) {
+            // $('#runnerParams .sourceTypeSetting').each(function () {
+            //     if (sourceType) {
+            //         Form.Element.disable(this);
+            //     } else {
+            //         Form.Element.enable(this);
+            //     }
+            // });
+            // if (sourceType) {
+            //     $('#runnerParams .' + sourceType).each(function () {
+            //         Form.Element.enable(this);
+            //     });
+            // }
+            // BS.VisibilityHandlers.updateVisibility('runnerParams');
         }
     };
 
@@ -41,13 +56,15 @@
         this.showPopupNearElement(nearestElement);
     };
 
-    BS.CodeBuildProjectNamePopup.fillProjectName = function(name) {
+    BS.CodeBuildProjectNamePopup.fillProjectName = function(name, sourceType) {
         $('#codebuild_project_name').val(name);
+        BS.CodeBuild.updateSourceVersionVisibility(sourceType);
         BS.CodeBuildProjectNamePopup.hidePopup(0);
     };
 
     $(document).ready(function() {
         BS.CodeBuild.updateArtifactsSettingsVisibility();
+        BS.CodeBuild.updateSourceVersionVisibility();
         BS.CodeBuild.updateArtifactsName();
     });
 })(jQuery);

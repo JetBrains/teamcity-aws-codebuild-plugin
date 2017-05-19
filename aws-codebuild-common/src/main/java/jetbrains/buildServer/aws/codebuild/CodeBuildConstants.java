@@ -18,6 +18,9 @@ public interface CodeBuildConstants {
   String PROJECT_NAME_PARAM = "codebuild_project_name";
   String PROJECT_NAME_LABEL = "Project name";
 
+  String USE_BUILD_REVISION_PARAM = "codebuild_use_build_revision";
+  String USE_BUILD_REVISION_LABEL = "TeamCity VCS revision";
+
   String SOURCE_VERSION_PARAM = "codebuild_source_version";
   String SOURCE_VERSION_LABEL = "Source version";
 
@@ -63,7 +66,8 @@ public interface CodeBuildConstants {
 
   Map<String, String> DEFAULTS = CollectionsUtil.asMap(
     WAIT_PARAM, WAIT_BUILD,
-    ARTIFACTS_PARAM, ARTIFACTS_NONE
+    ARTIFACTS_PARAM, ARTIFACTS_NONE,
+    USE_BUILD_REVISION_PARAM, "false"
   );
 
   String GIT_HUB_VCS_ROOT_ID_CONFIG_PARAM = "codebuild.github.vcs.root.id";

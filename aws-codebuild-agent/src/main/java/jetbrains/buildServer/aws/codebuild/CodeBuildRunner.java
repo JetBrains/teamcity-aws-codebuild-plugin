@@ -1,6 +1,5 @@
 package jetbrains.buildServer.aws.codebuild;
 
-import com.amazonaws.services.codebuild.AWSCodeBuildClient;
 import com.amazonaws.services.codebuild.model.*;
 import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.RunBuildException;
@@ -9,16 +8,17 @@ import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.messages.ErrorData;
 import jetbrains.buildServer.messages.Status;
-import jetbrains.buildServer.util.CollectionsUtil;
-import jetbrains.buildServer.util.Converter;
-import jetbrains.buildServer.util.EventDispatcher;
-import jetbrains.buildServer.util.StringUtil;
+import jetbrains.buildServer.util.*;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.zip.ZipOutputStream;
 
 import static jetbrains.buildServer.aws.codebuild.CodeBuildUtil.*;
 import static jetbrains.buildServer.messages.DefaultMessagesInfo.*;
@@ -43,10 +43,10 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       protected BuildFinishedStatus runImpl() throws RunBuildException {
         final Map<String, String> runnerParameters = validateParams();
         final String projectName = getProjectName(runnerParameters);
-        final String buildId = createClient(runnerParameters).startBuild(
+        final String buildId = createCodeBuildClient(runnerParameters).startBuild(
             new StartBuildRequest()
               .withProjectName(projectName)
-              .withSourceVersion(getSourceVersion())
+              .withSourceVersion(getSourceVersion(projectName))
               .withBuildspecOverride(getBuildSpec(runnerParameters))
               .withArtifactsOverride(getArtifacts())
               .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
@@ -83,26 +83,63 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       }
 
       @Nullable
-      private String getSourceVersion() throws RunBuildException {
-        String sourceVersion = CodeBuildUtil.getSourceVersion(context.getRunnerParameters());
-        if (StringUtil.isNotEmpty(sourceVersion)) return sourceVersion;
+      private String getSourceVersion(@NotNull String projectName) throws RunBuildException {
+        final Map<String, String> params = context.getRunnerParameters();
+        if (isUseBuildRevision(params)) {
+          final ProjectInfo project = getProject(params, projectName);
+          if (project == null) {
+            throw new RunBuildException("No AWS CodeBuild project " + projectName + " found. Please check the settings.");
+          }
+          if (SourceType.GITHUB.toString().equals(project.getSourceType())) {
+            final String vcsRootId = runningBuild.getSharedConfigParameters().get(CodeBuildConstants.GIT_HUB_VCS_ROOT_ID_CONFIG_PARAM);
 
-        final String vcsRootId = runningBuild.getSharedConfigParameters().get(CodeBuildConstants.GIT_HUB_VCS_ROOT_ID_CONFIG_PARAM);
-        if (StringUtil.isEmptyOrSpaces(vcsRootId)) return null;
+            if (StringUtil.isEmptyOrSpaces(vcsRootId) || CodeBuildConstants.UNKNOWN_GIT_HUB_VCS_ROOT_ID.equals(vcsRootId)) {
+              throw new RunBuildException("Failed to find the GitHub VCS root ID and use it to resolve " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
+            }
 
-        if (CodeBuildConstants.UNKNOWN_GIT_HUB_VCS_ROOT_ID.equals(vcsRootId)) {
-          throw new RunBuildException("Failed to find the GitHub VCS root ID and use it to resolve " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
+            final String sysPropName = "build.vcs.number." + vcsRootId;
+            final String sourceVersion = context.getBuildParameters().getSystemProperties().get(sysPropName);
+
+            if (StringUtil.isEmptyOrSpaces(sourceVersion)) {
+              throw new RunBuildException("Can't use empty %" + sysPropName + "% system property value as " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
+            }
+
+            runningBuild.getBuildLogger().message("Using %" + sysPropName + "% system property value " + sourceVersion + " as the AWS CodeBuild source version");
+            return sourceVersion;
+
+          } else if (SourceType.S3.toString().equals(project.getSourceType())) {
+            final File revision = prepareRevision();
+            if (revision == null) {
+              throw new RunBuildException("Unable to upload sources to the AWS S3: build checkout directory " + runningBuild.getCheckoutDirectory() + " is empty");
+            }
+            try {
+              return createS3Client(params).putObject(getBucketName(project.getSourceLocation()), getObjectKey(project.getSourceLocation()), revision).getVersionId();
+            } finally {
+              FileUtil.delete(revision);
+            }
+          } else {
+            throw new RunBuildException(CodeBuildConstants.USE_BUILD_REVISION_LABEL + " setting is supported only for Amazon S3 and GitHub AWS CodeBuild project source provider and can't be combined with " + project.getSourceType() + " source provider");
+          }
+        } else {
+          return CodeBuildUtil.getSourceVersion(params);
         }
+      }
 
-        final String sysPropName = "build.vcs.number." + vcsRootId;
-        sourceVersion = context.getBuildParameters().getSystemProperties().get(sysPropName);
-
-        if (StringUtil.isEmptyOrSpaces(sourceVersion)) {
-          throw new RunBuildException("Can't use empty %" + sysPropName + "% system property value as " + CodeBuildConstants.SOURCE_VERSION_LABEL + " AWS CodeBuild setting");
+      @Nullable
+      private File prepareRevision() throws RunBuildException {
+        final File[] files = runningBuild.getCheckoutDirectory().listFiles();
+        if (files == null || files.length == 0) return null;
+        if (files.length == 1 && files[0].getName().endsWith(".zip")) {
+          return files[0];
+        } else {
+          final File revision = new File(runningBuild.getBuildTempDirectory() + "/" + runningBuild.getCheckoutDirectory().getName() + ".zip");
+          try {
+            ArchiveUtil.packZip(runningBuild.getCheckoutDirectory(), new ZipOutputStream(new FileOutputStream(revision)));
+          } catch (FileNotFoundException e) {
+            throw new RunBuildException("Failed to package the checkout directory content", e);
+          }
+          return revision;
         }
-
-        runningBuild.getBuildLogger().message("Using %" + sysPropName + "% system property value " + sourceVersion + " as the AWS CodeBuild source version");
-        return sourceVersion;
       }
 
       @NotNull
@@ -141,11 +178,6 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   private void startContext(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild runningBuild) {
     log(runningBuild, getBlockStart(c));
     log(runningBuild, forContext(c, createTextMessage("Waiting for build " + c.codeBuildBuildId + " finish")));
-  }
-
-  @NotNull
-  private AWSCodeBuildClient createClient(Map<String, String> params) {
-    return AWSCommonParams.createAWSClients(params).createCodeBuildClient();
   }
 
   @NotNull
@@ -226,7 +258,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
   }
 
   private boolean finished(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
-    final List<Build> builds = createClient(c.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(c.codeBuildBuildId)).getBuilds();
+    final List<Build> builds = createCodeBuildClient(c.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(c.codeBuildBuildId)).getBuilds();
 
     if (builds == null || builds.isEmpty()) {
       log(build, forContext(c, createTextMessage("No AWS CodeBuild build with id=" + c.codeBuildBuildId + " found", Status.WARNING)));
@@ -257,7 +289,7 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
 
   private void interrupt(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
     log(build, forContext(c, createTextMessage("Stopping " + getBuildString(c), Status.WARNING)));
-    createClient(c.params).stopBuild(new StopBuildRequest().withId(c.codeBuildBuildId));
+    createCodeBuildClient(c.params).stopBuild(new StopBuildRequest().withId(c.codeBuildBuildId));
   }
 
   @NotNull

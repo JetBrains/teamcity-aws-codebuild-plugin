@@ -1,5 +1,6 @@
 package jetbrains.buildServer.aws.codebuild;
 
+import com.amazonaws.services.codebuild.AWSCodeBuildClient;
 import com.amazonaws.services.codebuild.model.ListProjectsRequest;
 import com.amazonaws.services.codebuild.model.ListProjectsResult;
 import com.amazonaws.services.codebuild.model.ProjectSortByType;
@@ -51,12 +52,14 @@ public class CodeBuildListProjectsController extends BaseController {
   }
 
   @NotNull
-  private List<String> getProjects(@NotNull Map<String, String> params) {
-    final List<String> res = new ArrayList<>();
+  private List<CodeBuildUtil.ProjectInfo> getProjects(@NotNull Map<String, String> params) {
+    final AWSCodeBuildClient client = CodeBuildUtil.createCodeBuildClient(params);
+    final List<CodeBuildUtil.ProjectInfo> res = new ArrayList<>();
     String nextToken = null;
     do {
-      final ListProjectsResult result = AWSCommonParams.createAWSClients(params).createCodeBuildClient().listProjects(new ListProjectsRequest().withSortBy(ProjectSortByType.LAST_MODIFIED_TIME).withSortOrder(SortOrderType.DESCENDING)).withNextToken(nextToken);
-      res.addAll(result.getProjects());
+      final ListProjectsResult result = client.listProjects(new ListProjectsRequest().withSortBy(ProjectSortByType.LAST_MODIFIED_TIME).withSortOrder(SortOrderType.DESCENDING)).withNextToken(nextToken);
+      if (result.getProjects().isEmpty()) break;
+      res.addAll(CodeBuildUtil.getProjects(params, result.getProjects()));
       nextToken = result.getNextToken();
     } while (StringUtil.isNotEmpty(nextToken));
     return res;
