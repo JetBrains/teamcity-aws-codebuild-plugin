@@ -53,16 +53,18 @@ public class CodeBuildListProjectsController extends BaseController {
 
   @NotNull
   private List<CodeBuildUtil.ProjectInfo> getProjects(@NotNull Map<String, String> params) {
-    final AWSCodeBuildClient client = CodeBuildUtil.createCodeBuildClient(params);
-    final List<CodeBuildUtil.ProjectInfo> res = new ArrayList<>();
-    String nextToken = null;
-    do {
-      final ListProjectsResult result = client.listProjects(new ListProjectsRequest().withSortBy(ProjectSortByType.LAST_MODIFIED_TIME).withSortOrder(SortOrderType.DESCENDING)).withNextToken(nextToken);
-      if (result.getProjects().isEmpty()) break;
-      res.addAll(CodeBuildUtil.getProjects(params, result.getProjects()));
-      nextToken = result.getNextToken();
-    } while (StringUtil.isNotEmpty(nextToken));
-    return res;
+    return AWSCommonParams.withAWSClients(params, clients -> {
+      final AWSCodeBuildClient client = clients.createCodeBuildClient();
+      final List<CodeBuildUtil.ProjectInfo> res = new ArrayList<>();
+      String nextToken = null;
+      do {
+        final ListProjectsResult result = client.listProjects(new ListProjectsRequest().withSortBy(ProjectSortByType.LAST_MODIFIED_TIME).withSortOrder(SortOrderType.DESCENDING)).withNextToken(nextToken);
+        if (result.getProjects().isEmpty()) break;
+        res.addAll(CodeBuildUtil.getProjects(params, result.getProjects()));
+        nextToken = result.getNextToken();
+      } while (StringUtil.isNotEmpty(nextToken));
+      return res;
+    });
   }
 
   @NotNull

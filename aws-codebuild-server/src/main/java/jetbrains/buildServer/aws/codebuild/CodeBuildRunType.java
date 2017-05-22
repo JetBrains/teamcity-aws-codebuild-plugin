@@ -1,9 +1,6 @@
 package jetbrains.buildServer.aws.codebuild;
 
-import jetbrains.buildServer.serverSide.InvalidProperty;
-import jetbrains.buildServer.serverSide.PropertiesProcessor;
-import jetbrains.buildServer.serverSide.RunType;
-import jetbrains.buildServer.serverSide.RunTypeRegistry;
+import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.util.CollectionsUtil;
 import jetbrains.buildServer.util.Converter;
 import jetbrains.buildServer.util.StringUtil;
@@ -23,14 +20,14 @@ public class CodeBuildRunType extends RunType {
   @NotNull
   private final PluginDescriptor myPluginDescriptor;
   @NotNull
-  private final AWSCommonParams myAWSCommonParams;
+  private final ServerSettings myServerSettings;
 
   public CodeBuildRunType(@NotNull RunTypeRegistry registry,
                           @NotNull PluginDescriptor pluginDescriptor,
-                          @NotNull AWSCommonParams awsCommonParams) {
+                          @NotNull ServerSettings serverSettings) {
     registry.registerRunType(this);
     myPluginDescriptor = pluginDescriptor;
-    myAWSCommonParams = awsCommonParams;
+    myServerSettings = serverSettings;
   }
 
   @NotNull
@@ -71,7 +68,7 @@ public class CodeBuildRunType extends RunType {
   @Override
   public Map<String, String> getDefaultRunnerProperties() {
     final Map<String, String> defaults = new HashMap<>();
-    defaults.putAll(myAWSCommonParams.getDefaults());
+    defaults.putAll(AWSCommonParams.getDefaults(myServerSettings.getServerUUID()));
     defaults.putAll(CodeBuildConstants.DEFAULTS);
     return defaults;
   }

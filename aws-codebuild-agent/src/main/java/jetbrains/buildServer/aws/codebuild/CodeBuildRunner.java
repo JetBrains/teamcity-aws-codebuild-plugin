@@ -9,6 +9,7 @@ import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.messages.ErrorData;
 import jetbrains.buildServer.messages.Status;
 import jetbrains.buildServer.util.*;
+import jetbrains.buildServer.util.amazon.AWSClients;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,14 +44,20 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
       protected BuildFinishedStatus runImpl() throws RunBuildException {
         final Map<String, String> runnerParameters = validateParams();
         final String projectName = getProjectName(runnerParameters);
-        final String buildId = createCodeBuildClient(runnerParameters).startBuild(
-            new StartBuildRequest()
-              .withProjectName(projectName)
-              .withSourceVersion(getSourceVersion(projectName))
-              .withBuildspecOverride(getBuildSpec(runnerParameters))
-              .withArtifactsOverride(getArtifacts())
-              .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
-              .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
+        final String buildId = AWSCommonParams.withAWSClients(runnerParameters, new AWSCommonParams.WithAWSClients<String, RunBuildException>() {
+          @Nullable
+          @Override
+          public String run(@NotNull AWSClients clients) throws RunBuildException {
+            return clients.createCodeBuildClient().startBuild(
+              new StartBuildRequest()
+                .withProjectName(projectName)
+                .withSourceVersion(getSourceVersion(projectName))
+                .withBuildspecOverride(getBuildSpec(runnerParameters))
+                .withArtifactsOverride(getArtifacts())
+                .withTimeoutInMinutesOverride(getTimeoutMinutesInt(runnerParameters))
+                .withEnvironmentVariablesOverride(getEnvironmentVariables())).getBuild().getId();
+          }
+        });
 
         runningBuild.addSharedSystemProperty(String.format(CodeBuildConstants.BUILD_ID_SYSTEM_PROPERTY_FORMAT, context.getId()), buildId);
 
@@ -113,7 +120,13 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
               throw new RunBuildException("Unable to upload sources to the AWS S3: build checkout directory " + runningBuild.getCheckoutDirectory() + " is empty");
             }
             try {
-              return createS3Client(params).putObject(getBucketName(project.getSourceLocation()), getObjectKey(project.getSourceLocation()), revision).getVersionId();
+              return AWSCommonParams.withAWSClients(params, new AWSCommonParams.WithAWSClients<String, RuntimeException>() {
+                @Nullable
+                @Override
+                public String run(@NotNull AWSClients clients) throws RuntimeException {
+                  return clients.createS3Client().putObject(getBucketName(project.getSourceLocation()), getObjectKey(project.getSourceLocation()), revision).getVersionId();
+                }
+              });
             } finally {
               FileUtil.delete(revision);
             }
@@ -257,8 +270,14 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     myCodeBuildBuilds.clear();
   }
 
-  private boolean finished(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
-    final List<Build> builds = createCodeBuildClient(c.params).batchGetBuilds(new BatchGetBuildsRequest().withIds(c.codeBuildBuildId)).getBuilds();
+  private boolean finished(@NotNull final CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
+    final List<Build> builds = AWSCommonParams.withAWSClients(c.params, new AWSCommonParams.WithAWSClients<List<Build>, RuntimeException>() {
+      @Nullable
+      @Override
+      public List<Build> run(@NotNull AWSClients clients) throws RuntimeException {
+        return clients.createCodeBuildClient().batchGetBuilds(new BatchGetBuildsRequest().withIds(c.codeBuildBuildId)).getBuilds();
+      }
+    });
 
     if (builds == null || builds.isEmpty()) {
       log(build, forContext(c, createTextMessage("No AWS CodeBuild build with id=" + c.codeBuildBuildId + " found", Status.WARNING)));
@@ -287,9 +306,16 @@ public class CodeBuildRunner extends AgentLifeCycleAdapter implements AgentBuild
     return false;
   }
 
-  private void interrupt(@NotNull CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
+  private void interrupt(@NotNull final CodeBuildBuildContext c, @NotNull AgentRunningBuild build) {
     log(build, forContext(c, createTextMessage("Stopping " + getBuildString(c), Status.WARNING)));
-    createCodeBuildClient(c.params).stopBuild(new StopBuildRequest().withId(c.codeBuildBuildId));
+    AWSCommonParams.withAWSClients(c.params, new AWSCommonParams.WithAWSClients<Void, RuntimeException>() {
+      @Nullable
+      @Override
+      public Void run(@NotNull AWSClients clients) throws RuntimeException {
+        clients.createCodeBuildClient().stopBuild(new StopBuildRequest().withId(c.codeBuildBuildId));
+        return null;
+      }
+    });
   }
 
   @NotNull

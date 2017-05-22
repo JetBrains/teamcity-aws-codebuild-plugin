@@ -1,11 +1,10 @@
 package jetbrains.buildServer.aws.codebuild;
 
-import com.amazonaws.services.codebuild.AWSCodeBuildClient;
 import com.amazonaws.services.codebuild.model.BatchGetProjectsRequest;
 import com.amazonaws.services.codebuild.model.Project;
-import com.amazonaws.services.s3.AmazonS3Client;
 import jetbrains.buildServer.util.CollectionsUtil;
 import jetbrains.buildServer.util.Converter;
+import jetbrains.buildServer.util.amazon.AWSClients;
 import jetbrains.buildServer.util.amazon.AWSCommonParams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -106,21 +105,17 @@ public final class CodeBuildUtil {
   }
 
   @NotNull
-  public static AmazonS3Client createS3Client(@NotNull Map<String, String> params) {
-    return AWSCommonParams.createAWSClients(params).createS3Client();
-  }
-
-  @NotNull
-  public static AWSCodeBuildClient createCodeBuildClient(@NotNull Map<String, String> params) {
-    return AWSCommonParams.createAWSClients(params).createCodeBuildClient();
-  }
-
-  @NotNull
-  public static List<ProjectInfo> getProjects(@NotNull Map<String, String> params, @NotNull Collection<String> names) {
-    return CollectionsUtil.convertCollection(createCodeBuildClient(params).batchGetProjects(new BatchGetProjectsRequest().withNames(names)).getProjects(), new Converter<ProjectInfo, Project>() {
+  public static List<ProjectInfo> getProjects(@NotNull Map<String, String> params, @NotNull final Collection<String> names) {
+    return AWSCommonParams.withAWSClients(params, new AWSCommonParams.WithAWSClients<List<ProjectInfo>, RuntimeException>() {
+      @Nullable
       @Override
-      public ProjectInfo createFrom(@NotNull Project p) {
-        return new ProjectInfo(p.getName(), p.getSource().getType(), p.getSource().getLocation());
+      public List<ProjectInfo> run(@NotNull AWSClients clients) throws RuntimeException {
+        return CollectionsUtil.convertCollection(clients.createCodeBuildClient().batchGetProjects(new BatchGetProjectsRequest().withNames(names)).getProjects(), new Converter<ProjectInfo, Project>() {
+          @Override
+          public ProjectInfo createFrom(@NotNull Project p) {
+            return new ProjectInfo(p.getName(), p.getSource().getType(), p.getSource().getLocation());
+          }
+        });
       }
     });
   }
