@@ -15,35 +15,35 @@ public interface CodeBuildConstants {
   String EDIT_PARAMS_JSP = "editCodeBuildParams.jsp";
   String VIEW_PARAMS_JSP = "viewCodeBuildParams.jsp";
 
-  String PROJECT_NAME_PARAM = "codebuild_project_name";
+  String PROJECT_NAME_PARAM = "codebuild.project.name";
   String PROJECT_NAME_LABEL = "Project name";
 
-  String USE_BUILD_REVISION_PARAM = "codebuild_use_build_revision";
+  String USE_BUILD_REVISION_PARAM = "codebuild.use.build.revision";
   String USE_BUILD_REVISION_LABEL = "TeamCity VCS revision";
 
-  String SOURCE_VERSION_PARAM = "codebuild_source_version";
+  String SOURCE_VERSION_PARAM = "codebuild.source.version";
   String SOURCE_VERSION_LABEL = "Source version";
 
-  String BUILD_SPEC_PARAM = "codebuild_build_spec";
+  String BUILD_SPEC_PARAM = "codebuild.build.spec";
   String BUILD_SPEC_LABEL = "Build specification";
 
-  String ARTIFACTS_PARAM = "codebuild_artifacts";
+  String ARTIFACTS_PARAM = "codebuild.artifacts";
   String ARTIFACTS_NONE = "none";
   String ARTIFACTS_S3 = "s3";
   String ARTIFACTS_LABEL = "Artifacts type";
   String ARTIFACTS_NONE_LABEL = "No artifacts";
   String ARTIFACTS_S3_LABEL = "Amazon S3";
 
-  String ARTIFACTS_S3_NAME_PARAM = "codebuild_artifacts_s3_name";
+  String ARTIFACTS_S3_NAME_PARAM = "codebuild.artifacts.s3.name";
   String ARTIFACTS_S3_NAME_LABEL = "Artifacts name";
 
-  String ARTIFACTS_S3_BUCKET_PARAM = "codebuild_artifacts_s3_bucket";
+  String ARTIFACTS_S3_BUCKET_PARAM = "codebuild.artifacts.s3.bucket";
   String ARTIFACTS_S3_BUCKET_LABEL = "Bucket name";
 
-  String ARTIFACTS_S3_ZIP_PARAM = "codebuild_artifacts_s3_zip";
+  String ARTIFACTS_S3_ZIP_PARAM = "codebuild.artifacts.s3.zip";
   String ARTIFACTS_S3_ZIP_LABEL = "Zip artifacts";
 
-  String WAIT_PARAM = "codebuild_wait";
+  String WAIT_PARAM = "codebuild.wait";
   String WAIT_NONE = "none";
   String WAIT_STEP = "step";
   String WAIT_BUILD = "build";
@@ -52,7 +52,7 @@ public interface CodeBuildConstants {
   String WAIT_STEP_LABEL = "On step finish";
   String WAIT_BUILD_LABEL = "On build finish";
 
-  String TIMEOUT_MINUTES_PARAM = "codebuild_timeout_minutes";
+  String TIMEOUT_MINUTES_PARAM = "codebuild.timeout.minutes";
   String TIMEOUT_MINUTES_LABEL = "Timeout (minutes)";
   int DEFAULT_TIMEOUT_MINUTES = 60;
 
