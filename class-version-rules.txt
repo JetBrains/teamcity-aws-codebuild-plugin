@@ -18,6 +18,6 @@
 
 
 ; agent part of plugin is 1.8
-1.6 => aws-codebuild-plugin.zip!agent/
+1.8 => aws-codebuild-plugin.zip!agent/
 ; server part of plugin is 1.8
 1.8 => aws-codebuild-plugin.zip!server/
