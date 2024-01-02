@@ -64,7 +64,7 @@ configure(subprojects) {
     repositories {
         mavenCentral()
         maven {
-            url = 'https://repository.jetbrains.com/all'
+            url = 'https://download.jetbrains.com/teamcity-repository'
         }
     }
 }
